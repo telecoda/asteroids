@@ -10,6 +10,7 @@ namespace Asteroids {
             this.load.image("stars", "assets/stars.png");
             this.load.image("asteroid-01", "assets/asteroid-01.png");
             this.load.image("spaceship", "assets/spaceship.png");
+            this.load.image("bullet", "assets/bullet.png")
         }
 
         // -------------------------------------------------------------------------

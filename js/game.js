@@ -61,6 +61,7 @@ var Asteroids;
         __extends(Play, _super);
         function Play() {
             var _this = _super.apply(this, arguments) || this;
+            _this._bullets = [];
             // status
             _this._gameOver = false;
             return _this;
@@ -90,12 +91,29 @@ var Asteroids;
             this._spaceship.body.drag.set(100);
             this._spaceship.body.maxVelocity.set(200);
             // setup input
-            this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.A);
-            this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.D);
-            this._thrustKey = this.game.input.keyboard.addKey(Phaser.Keyboard.W);
+            this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
+            this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
+            this._thrustKey = this.game.input.keyboard.addKey(Phaser.Keyboard.UP);
+            this._fireKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+            this._fireKey.onDown.add(function () {
+                this._fireDown = true;
+            }, this);
+        };
+        Play.prototype._fireBullet = function () {
+            this._fireDown = false;
+            var bullet = this.game.add.sprite(this._spaceship.centerX, this._spaceship.centerY, 'bullet');
+            bullet.anchor.setTo(0.5, 0.5);
+            bullet.angle = this._spaceship.angle;
+            this.game.physics.enable(bullet, Phaser.Physics.ARCADE);
+            bullet.body.velocity.copyFrom(this.game.physics.arcade.velocityFromAngle(this._spaceship.angle, 300));
+            this._bullets.push(bullet);
         };
         // -------------------------------------------------------------------------
         Play.prototype.update = function () {
+            this._handleInput();
+            this._wrapShipLocation();
+        };
+        Play.prototype._handleInput = function () {
             if (this._thrustKey.isDown) {
                 this.game.physics.arcade.accelerationFromRotation(this._spaceship.rotation, 200, this._spaceship.body.acceleration);
             }
@@ -111,7 +129,12 @@ var Asteroids;
             else {
                 this._spaceship.body.angularVelocity = 0;
             }
-            // if offscreen , move back on
+            if (this._fireDown) {
+                this._fireBullet();
+            }
+        };
+        Play.prototype._wrapShipLocation = function () {
+            // check if ship offscreen , wrap around
             var sx = this._spaceship.x;
             var sy = this._spaceship.y;
             var width = this._spaceship.width / 2;
@@ -152,6 +175,7 @@ var Asteroids;
             this.load.image("stars", "assets/stars.png");
             this.load.image("asteroid-01", "assets/asteroid-01.png");
             this.load.image("spaceship", "assets/spaceship.png");
+            this.load.image("bullet", "assets/bullet.png");
         };
         // -------------------------------------------------------------------------
         Preload.prototype.create = function () {

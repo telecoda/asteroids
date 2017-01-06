@@ -5,6 +5,7 @@ namespace Asteroids {
         private _background: Phaser.Sprite;
         private _spaceship: Phaser.Sprite;
         private _asteroid: Phaser.Sprite;
+        private _bullets: Phaser.Sprite[] = [];
 
         // status
         private _gameOver: boolean = false;
@@ -13,6 +14,8 @@ namespace Asteroids {
         private _leftKey: Phaser.Key;
         private _rightKey: Phaser.Key;
         private _thrustKey: Phaser.Key;
+        private _fireKey: Phaser.Key;
+        private _fireDown: boolean;
 
 		public render() {
 			this.game.debug.text(this.game.time.fps.toString(), 2, 14, "#ffffff");
@@ -39,21 +42,43 @@ namespace Asteroids {
             this._spaceship.angle = 0;
             this._spaceship.scale = new Phaser.Point(0.5,0.5);
 		    //  and its physics settings
-    this.game.physics.enable(this._spaceship, Phaser.Physics.ARCADE);
+            this.game.physics.enable(this._spaceship, Phaser.Physics.ARCADE);
 
-    this._spaceship.body.drag.set(100);
-    this._spaceship.body.maxVelocity.set(200);
-
+            this._spaceship.body.drag.set(100);
+            this._spaceship.body.maxVelocity.set(200);
 
 			// setup input
-			this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.A)
-			this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.D)
-			this._thrustKey = this.game.input.keyboard.addKey(Phaser.Keyboard.W)
+			this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
+			this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
+			this._thrustKey = this.game.input.keyboard.addKey(Phaser.Keyboard.UP);
+            this._fireKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 
+            this._fireKey.onDown.add(function () {
+                this._fireDown = true;
+            }, this);
+
+        }
+
+        private _fireBullet() {
+            this._fireDown = false;
+			var bullet = this.game.add.sprite( this._spaceship.centerX, this._spaceship.centerY, 'bullet' );
+			bullet.anchor.setTo( 0.5, 0.5 );
+            bullet.angle = this._spaceship.angle;
+            this.game.physics.enable(bullet, Phaser.Physics.ARCADE);
+            bullet.body.velocity.copyFrom(this.game.physics.arcade.velocityFromAngle(this._spaceship.angle, 300));
+            this._bullets.push(bullet);
         }
 
         // -------------------------------------------------------------------------
         public update() {
+
+            this._handleInput();
+            this._wrapShipLocation();
+
+        }
+
+        private _handleInput() {
+
             if (this._thrustKey.isDown) {
                 this.game.physics.arcade.accelerationFromRotation(this._spaceship.rotation, 200, this._spaceship.body.acceleration);
             }
@@ -71,8 +96,14 @@ namespace Asteroids {
                 this._spaceship.body.angularVelocity = 0;
             }
 
-            // if offscreen , move back on
+            if (this._fireDown) {
+                this._fireBullet()
+            }
 
+        }
+
+        private _wrapShipLocation() {
+            // check if ship offscreen , wrap around
             var sx = this._spaceship.x;
             var sy = this._spaceship.y;
             var width = this._spaceship.width / 2;
