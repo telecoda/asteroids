@@ -5,6 +5,7 @@ namespace Asteroids {
         private _background: Phaser.Sprite;
         private _spaceship: Phaser.Sprite;
         private _asteroid: Phaser.Sprite;
+        private _weapon: Phaser.Weapon;
         private _bullets: Phaser.Sprite[] = [];
 
         // status
@@ -15,10 +16,10 @@ namespace Asteroids {
         private _rightKey: Phaser.Key;
         private _thrustKey: Phaser.Key;
         private _fireKey: Phaser.Key;
-        private _fireDown: boolean;
-
+        
 		public render() {
 			this.game.debug.text(this.game.time.fps.toString(), 2, 14, "#ffffff");
+            this._weapon.debug();
 		}
 
         // -------------------------------------------------------------------------
@@ -47,26 +48,18 @@ namespace Asteroids {
             this._spaceship.body.drag.set(100);
             this._spaceship.body.maxVelocity.set(200);
 
+            this._weapon = this.game.add.weapon(30, 'bullet');
+            this._weapon.bulletSpeed = 300;
+            this._weapon.fireRate = 100;
+            this._weapon.trackSprite(this._spaceship, 0, 0, true);
+
+
 			// setup input
 			this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
 			this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
 			this._thrustKey = this.game.input.keyboard.addKey(Phaser.Keyboard.UP);
             this._fireKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 
-            this._fireKey.onDown.add(function () {
-                this._fireDown = true;
-            }, this);
-
-        }
-
-        private _fireBullet() {
-            this._fireDown = false;
-			var bullet = this.game.add.sprite( this._spaceship.centerX, this._spaceship.centerY, 'bullet' );
-			bullet.anchor.setTo( 0.5, 0.5 );
-            bullet.angle = this._spaceship.angle;
-            this.game.physics.enable(bullet, Phaser.Physics.ARCADE);
-            bullet.body.velocity.copyFrom(this.game.physics.arcade.velocityFromAngle(this._spaceship.angle, 300));
-            this._bullets.push(bullet);
         }
 
         // -------------------------------------------------------------------------
@@ -96,8 +89,12 @@ namespace Asteroids {
                 this._spaceship.body.angularVelocity = 0;
             }
 
-            if (this._fireDown) {
-                this._fireBullet()
+            // if (this._fireDown) {
+            //     this._fireBullet()
+            // }
+
+            if (this._fireKey.isDown) {
+                this._weapon.fire()
             }
 
         }
