@@ -15,6 +15,7 @@ var Asteroids;
     Global.GAME_HEIGHT = 800;
     // constants
     Global.TOTAL_LIVES = 3;
+    Global.POINTS_PER_HIT = 5;
     Asteroids.Global = Global;
 })(Asteroids || (Asteroids = {}));
 // -------------------------------------------------------------------------
@@ -41,6 +42,30 @@ var Asteroids;
         return Game;
     }(Phaser.Game));
     Asteroids.Game = Game;
+})(Asteroids || (Asteroids = {}));
+var Asteroids;
+(function (Asteroids) {
+    var Asteroid = (function (_super) {
+        __extends(Asteroid, _super);
+        // -------------------------------------------------------------------------
+        function Asteroid(game, x, y) {
+            var _this = _super.call(this, game, 0, 0, "Asteroid") || this;
+            // center player sprite horizontally
+            _this.anchor.x = 0.5;
+            _this.loadTexture('asteroid-01');
+            // enable physics for asteroid
+            game.physics.arcade.enable(_this, false);
+            // no gravity
+            var body = _this.body;
+            body.allowGravity = false;
+            body.setSize(_this.width - 50, _this.height - 50, 25, 25);
+            _this.x = x;
+            _this.y = y;
+            return _this;
+        }
+        return Asteroid;
+    }(Phaser.Sprite));
+    Asteroids.Asteroid = Asteroid;
 })(Asteroids || (Asteroids = {}));
 var Asteroids;
 (function (Asteroids) {
@@ -73,18 +98,24 @@ var Asteroids;
             _this._initAsteroids = function (count) {
                 _this._asteroids = new Phaser.Group(_this.game);
                 for (var i = 0; i < count; i++) {
-                    var asteroid = _this.game.add.sprite(_this.game.world.centerX - 200, _this.game.world.centerY - 200 + i * 50, 'asteroid-01');
-                    asteroid.anchor.setTo(0.5, 0.5);
-                    _this.game.physics.enable(asteroid, Phaser.Physics.ARCADE);
-                    // create bounding box smaller that whole asteroid
-                    asteroid.body.setSize(asteroid.width - 50, asteroid.height - 50, 25, 25);
+                    //			    var asteroid = this.game.add.sprite( this.game.world.centerX-200, this.game.world.centerY-300+i*100, 'asteroid-01' );
+                    // asteroid.anchor.setTo( 0.5, 0.5 );
+                    // this.game.physics.enable(asteroid, Phaser.Physics.ARCADE);
+                    // // create bounding box smaller that whole asteroid
+                    // asteroid.body.setSize(asteroid.width-50, asteroid.height-50, 25, 25)
+                    var x = _this.game.world.centerX - 200;
+                    var y = _this.game.world.centerY - 300 + i * 100;
+                    var asteroid = new Asteroids.Asteroid(_this.game, x, y);
                     _this._asteroids.add(asteroid);
                 }
             };
             _this._bulletHitAsteroid = function (asteroid, bullet) {
-                asteroid.destroy();
+                // we can't kill/destroy the asteroid here as it messes up the underlying array an we'll
+                // get undefined errors as we try to reference deleted objects.
+                asteroid.visible = false;
                 bullet.kill();
                 _this._asteroidCount--;
+                _this._score += Asteroids.Global.POINTS_PER_HIT;
             };
             return _this;
         }
@@ -136,6 +167,12 @@ var Asteroids;
             this._wrapShipLocation();
             //  Collision detection
             this.game.physics.arcade.overlap(this._weapon.bullets, this._asteroids, this._bulletHitAsteroid, null, this);
+            // this._asteroids.forEachExists(function (asteroid: Phaser.Sprite) {
+            //     this.game.physics.arcade.overlap(this._weapon.bullets, asteroid, this._bulletHitAsteroid, null, this);
+            // }, this);
+            // this._weapon.bullets.forEachExists(function (bullet: Phaser.Sprite) {
+            //     this.game.physics.arcade.overlap(bullet, this._asteroids, this._bulletHitAsteroid, null, this);
+            // }, this);
         };
         Play.prototype._startGame = function () {
             this._lives = Asteroids.Global.TOTAL_LIVES;

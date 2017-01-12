@@ -10,6 +10,7 @@ namespace Asteroids {
 
         // constants
         static TOTAL_LIVES: number = 3;
+        static POINTS_PER_HIT: number = 5;
     }
 }
 

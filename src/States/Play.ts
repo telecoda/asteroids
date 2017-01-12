@@ -84,18 +84,17 @@ namespace Asteroids {
             this._wrapShipLocation();
 
             //  Collision detection
+            
             this.game.physics.arcade.overlap(this._weapon.bullets, this._asteroids, this._bulletHitAsteroid, null, this);
-
+ 
         }
 
         private _initAsteroids = (count: number) => {
             this._asteroids = new Phaser.Group(this.game);
             for (var i = 0; i< count; i++) {
-			    var asteroid = this.game.add.sprite( this.game.world.centerX-200, this.game.world.centerY-200+i*50, 'asteroid-01' );
-			    asteroid.anchor.setTo( 0.5, 0.5 );
-                this.game.physics.enable(asteroid, Phaser.Physics.ARCADE);
-                // create bounding box smaller that whole asteroid
-                asteroid.body.setSize(asteroid.width-50, asteroid.height-50, 25, 25)
+                var x = this.game.world.centerX-200;
+                var y = this.game.world.centerY-300+i*100;
+                var asteroid = new Asteroids.Asteroid(this.game ,x ,y );
                 this._asteroids.add(asteroid);
             }
 
@@ -109,9 +108,12 @@ namespace Asteroids {
         }
 
         private _bulletHitAsteroid = (asteroid: Phaser.Bullet, bullet: Phaser.Bullet) => {
-            asteroid.destroy();
+            // we can't kill/destroy the asteroid here as it messes up the underlying array an we'll
+            // get undefined errors as we try to reference deleted objects.
+            asteroid.visible = false;
             bullet.kill();
             this._asteroidCount--;
+            this._score += Global.POINTS_PER_HIT;
 
         }
 
