@@ -4,12 +4,17 @@ namespace Asteroids {
 
         private _background: Phaser.Sprite;
         private _spaceship: Phaser.Sprite;
-        private _asteroid: Phaser.Sprite;
+        private _asteroids: Phaser.Group;
+        private _asteroidCount: number = 0;
         private _weapon: Phaser.Weapon;
         private _bullets: Phaser.Sprite[] = [];
 
         // status
         private _gameOver: boolean = false;
+
+        private _lives: number = 0;
+        private _score: number = 0;
+        private _level: number = 0;
 
         // input
         private _leftKey: Phaser.Key;
@@ -18,9 +23,16 @@ namespace Asteroids {
         private _fireKey: Phaser.Key;
         
 		public render() {
-			this.game.debug.text(this.game.time.fps.toString(), 2, 14, "#ffffff");
+			this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, 14, "#ffffff");
+			this.game.debug.text("Score:" + this._score, 100, 14, "#ffffff");
+			this.game.debug.text("Lives:" + this._lives, 200, 14, "#ffffff");
+			this.game.debug.text("Level:" + this._level, 300, 14, "#ffffff");
+			this.game.debug.text("Left:" + this._asteroidCount, 400, 14, "#ffffff");
             this._weapon.debug();
-            this.game.debug.body(this._asteroid);
+            this._asteroids.forEachExists(function (sprite: Phaser.Sprite) {
+                this.game.debug.body(sprite);
+            }, this);
+            
 		}
 
         // -------------------------------------------------------------------------
@@ -53,18 +65,15 @@ namespace Asteroids {
             this._weapon.fireRate = 100;
             this._weapon.trackSprite(this._spaceship, 0, 0, true);
 
-			// init asteroids
-			this._asteroid = this.game.add.sprite( this.game.world.centerX+200, this.game.world.centerY-200, 'asteroid-01' );
-			this._asteroid.anchor.setTo( 0.5, 0.5 );
-            this.game.physics.enable(this._asteroid, Phaser.Physics.ARCADE);
-            // create bounding box smaller that whole asteroid
-            this._asteroid.body.setSize(this._asteroid.width-50, this._asteroid.height-50, 25, 25)
 
 			// setup input
 			this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
 			this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
 			this._thrustKey = this.game.input.keyboard.addKey(Phaser.Keyboard.UP);
             this._fireKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+
+            this._startGame();
+            this._initAsteroids(this._asteroidCount);
 
         }
 
@@ -75,13 +84,34 @@ namespace Asteroids {
             this._wrapShipLocation();
 
             //  Collision detection
-            this.game.physics.arcade.overlap(this._weapon.bullets, this._asteroid, this._bulletHitAsteroid, null, this);
+            this.game.physics.arcade.overlap(this._weapon.bullets, this._asteroids, this._bulletHitAsteroid, null, this);
 
         }
 
-        private _bulletHitAsteroid(asteroid: Phaser.Bullet, bullet: Phaser.Bullet) {
+        private _initAsteroids = (count: number) => {
+            this._asteroids = new Phaser.Group(this.game);
+            for (var i = 0; i< count; i++) {
+			    var asteroid = this.game.add.sprite( this.game.world.centerX-200, this.game.world.centerY-200+i*50, 'asteroid-01' );
+			    asteroid.anchor.setTo( 0.5, 0.5 );
+                this.game.physics.enable(asteroid, Phaser.Physics.ARCADE);
+                // create bounding box smaller that whole asteroid
+                asteroid.body.setSize(asteroid.width-50, asteroid.height-50, 25, 25)
+                this._asteroids.add(asteroid);
+            }
+
+        }
+
+        private _startGame() {
+            this._lives = Global.TOTAL_LIVES;
+            this._score = 0;
+            this._level = 1;
+            this._asteroidCount = 5;
+        }
+
+        private _bulletHitAsteroid = (asteroid: Phaser.Bullet, bullet: Phaser.Bullet) => {
             asteroid.destroy();
             bullet.kill();
+            this._asteroidCount--;
 
         }
 
@@ -103,10 +133,6 @@ namespace Asteroids {
             else {
                 this._spaceship.body.angularVelocity = 0;
             }
-
-            // if (this._fireDown) {
-            //     this._fireBullet()
-            // }
 
             if (this._fireKey.isDown) {
                 this._weapon.fire()

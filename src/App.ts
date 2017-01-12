@@ -7,6 +7,9 @@ namespace Asteroids {
         // game size
         static GAME_WIDTH: number = 1024;
         static GAME_HEIGHT: number = 800;
+
+        // constants
+        static TOTAL_LIVES: number = 3;
     }
 }
 

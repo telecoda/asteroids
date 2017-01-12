@@ -13,6 +13,8 @@ var Asteroids;
     // game size
     Global.GAME_WIDTH = 1024;
     Global.GAME_HEIGHT = 800;
+    // constants
+    Global.TOTAL_LIVES = 3;
     Asteroids.Global = Global;
 })(Asteroids || (Asteroids = {}));
 // -------------------------------------------------------------------------
@@ -61,15 +63,41 @@ var Asteroids;
         __extends(Play, _super);
         function Play() {
             var _this = _super.apply(this, arguments) || this;
+            _this._asteroidCount = 0;
             _this._bullets = [];
             // status
             _this._gameOver = false;
+            _this._lives = 0;
+            _this._score = 0;
+            _this._level = 0;
+            _this._initAsteroids = function (count) {
+                _this._asteroids = new Phaser.Group(_this.game);
+                for (var i = 0; i < count; i++) {
+                    var asteroid = _this.game.add.sprite(_this.game.world.centerX - 200, _this.game.world.centerY - 200 + i * 50, 'asteroid-01');
+                    asteroid.anchor.setTo(0.5, 0.5);
+                    _this.game.physics.enable(asteroid, Phaser.Physics.ARCADE);
+                    // create bounding box smaller that whole asteroid
+                    asteroid.body.setSize(asteroid.width - 50, asteroid.height - 50, 25, 25);
+                    _this._asteroids.add(asteroid);
+                }
+            };
+            _this._bulletHitAsteroid = function (asteroid, bullet) {
+                asteroid.destroy();
+                bullet.kill();
+                _this._asteroidCount--;
+            };
             return _this;
         }
         Play.prototype.render = function () {
-            this.game.debug.text(this.game.time.fps.toString(), 2, 14, "#ffffff");
+            this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, 14, "#ffffff");
+            this.game.debug.text("Score:" + this._score, 100, 14, "#ffffff");
+            this.game.debug.text("Lives:" + this._lives, 200, 14, "#ffffff");
+            this.game.debug.text("Level:" + this._level, 300, 14, "#ffffff");
+            this.game.debug.text("Left:" + this._asteroidCount, 400, 14, "#ffffff");
             this._weapon.debug();
-            this.game.debug.body(this._asteroid);
+            this._asteroids.forEachExists(function (sprite) {
+                this.game.debug.body(sprite);
+            }, this);
         };
         // -------------------------------------------------------------------------
         Play.prototype.create = function () {
@@ -94,28 +122,26 @@ var Asteroids;
             this._weapon.bulletSpeed = 300;
             this._weapon.fireRate = 100;
             this._weapon.trackSprite(this._spaceship, 0, 0, true);
-            // init asteroids
-            this._asteroid = this.game.add.sprite(this.game.world.centerX + 200, this.game.world.centerY - 200, 'asteroid-01');
-            this._asteroid.anchor.setTo(0.5, 0.5);
-            this.game.physics.enable(this._asteroid, Phaser.Physics.ARCADE);
-            // create bounding box smaller that whole asteroid
-            this._asteroid.body.setSize(this._asteroid.width - 50, this._asteroid.height - 50, 25, 25);
             // setup input
             this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
             this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
             this._thrustKey = this.game.input.keyboard.addKey(Phaser.Keyboard.UP);
             this._fireKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+            this._startGame();
+            this._initAsteroids(this._asteroidCount);
         };
         // -------------------------------------------------------------------------
         Play.prototype.update = function () {
             this._handleInput();
             this._wrapShipLocation();
             //  Collision detection
-            this.game.physics.arcade.overlap(this._weapon.bullets, this._asteroid, this._bulletHitAsteroid, null, this);
+            this.game.physics.arcade.overlap(this._weapon.bullets, this._asteroids, this._bulletHitAsteroid, null, this);
         };
-        Play.prototype._bulletHitAsteroid = function (asteroid, bullet) {
-            asteroid.destroy();
-            bullet.kill();
+        Play.prototype._startGame = function () {
+            this._lives = Asteroids.Global.TOTAL_LIVES;
+            this._score = 0;
+            this._level = 1;
+            this._asteroidCount = 5;
         };
         Play.prototype._handleInput = function () {
             if (this._thrustKey.isDown) {
@@ -133,9 +159,6 @@ var Asteroids;
             else {
                 this._spaceship.body.angularVelocity = 0;
             }
-            // if (this._fireDown) {
-            //     this._fireBullet()
-            // }
             if (this._fireKey.isDown) {
                 this._weapon.fire();
             }
