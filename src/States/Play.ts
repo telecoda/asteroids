@@ -8,6 +8,7 @@ namespace Asteroids {
         private _asteroidCount: number = 0;
         private _weapon: Phaser.Weapon;
         private _bullets: Phaser.Sprite[] = [];
+        private _healthBar: Phaser.Graphics;
 
         // status
         private _gameOver: boolean = false;
@@ -25,14 +26,14 @@ namespace Asteroids {
 		public render() {
 			this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, 14, "#ffffff");
 			this.game.debug.text("Score:" + this._score, 100, 14, "#ffffff");
-			this.game.debug.text("Lives:" + this._lives, 200, 14, "#ffffff");
-			this.game.debug.text("Level:" + this._level, 300, 14, "#ffffff");
-			this.game.debug.text("Left:" + this._asteroidCount, 400, 14, "#ffffff");
+			this.game.debug.text("Health:" + this._spaceship.health, 200, 14, "#ffffff");
+			this.game.debug.text("Lives:" + this._lives, 300, 14, "#ffffff");
+			this.game.debug.text("Level:" + this._level, 400, 14, "#ffffff");
+			this.game.debug.text("Left:" + this._asteroidCount, 500, 14, "#ffffff");
             this._weapon.debug();
             // this._asteroids.forEachExists(function (sprite: Phaser.Sprite) {
             //     this.game.debug.body(sprite);
             // }, this);
-            
 		}
 
         // -------------------------------------------------------------------------
@@ -52,6 +53,8 @@ namespace Asteroids {
 			this._spaceship.anchor.setTo( 0.5, 0.5 );
             this._spaceship.angle = 0;
             this._spaceship.scale = new Phaser.Point(0.5,0.5);
+            this._spaceship.health = Global.MAX_HEALTH;
+
 		    //  and its physics settings
             this.game.physics.enable(this._spaceship, Phaser.Physics.ARCADE);
 
@@ -65,7 +68,8 @@ namespace Asteroids {
             this._weapon.fireRate = 100;
             this._weapon.trackSprite(this._spaceship, 0, 0, true);
 
-
+            // healthbar
+            this._healthBar = this.game.add.graphics(0,0);
 			// setup input
 			this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
 			this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
@@ -88,7 +92,14 @@ namespace Asteroids {
 
             //  Collision detection
             this.game.physics.arcade.overlap(this._weapon.bullets, this._asteroids, this._bulletHitAsteroid, null, this);
- 
+            this.game.physics.arcade.overlap(this._spaceship, this._asteroids, this._spaceshipHitAsteroid, null, this);
+            // update health display
+            // health remaining    
+            this._healthBar.clear();
+            this._healthBar.beginFill(0x00ff00);
+            this._healthBar.drawRect(0, 0, this._spaceship.health, 20);
+            this._healthBar.beginFill(0xff0000);
+            this._healthBar.drawRect(this._spaceship.health, 0, this.game.width, 20);
         }
 
         private _initAsteroids = (count: number) => {
@@ -123,8 +134,12 @@ namespace Asteroids {
                 this._asteroidCount++;
             }
             this._score += Global.POINTS_PER_HIT;
-
         }
+
+        private _spaceshipHitAsteroid = (spaceship: Phaser.Sprite,asteroid: Asteroids.Asteroid ) => {
+            spaceship.health -= 1;
+        }
+
 
         private _handleInput() {
 

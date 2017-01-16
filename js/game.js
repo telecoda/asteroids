@@ -16,6 +16,8 @@ var Asteroids;
     // constants
     Global.TOTAL_LIVES = 3;
     Global.POINTS_PER_HIT = 5;
+    Global.MAX_HEALTH = 1000;
+    Global.MAX_ASTEROID_VELOCITY = 200;
     Asteroids.Global = Global;
 })(Asteroids || (Asteroids = {}));
 // -------------------------------------------------------------------------
@@ -95,8 +97,8 @@ var Asteroids;
                 _this._group.add(_this);
             };
             _this.startMoving = function () {
-                _this.body.velocity.x = (Asteroid.MAX_VELOCITY / 2) - (Math.random() * Asteroid.MAX_VELOCITY);
-                _this.body.velocity.y = (Asteroid.MAX_VELOCITY / 2) - (Math.random() * Asteroid.MAX_VELOCITY);
+                _this.body.velocity.x = (Asteroids.Global.MAX_ASTEROID_VELOCITY / 2) - (Math.random() * Asteroids.Global.MAX_ASTEROID_VELOCITY);
+                _this.body.velocity.y = (Asteroids.Global.MAX_ASTEROID_VELOCITY / 2) - (Math.random() * Asteroids.Global.MAX_ASTEROID_VELOCITY);
             };
             // center player sprite horizontally
             _this.anchor.x = 0.5;
@@ -119,7 +121,6 @@ var Asteroids;
     Asteroid.scales = [0.10, 0.25, 0.50, 0.75, 1];
     Asteroid.MIN_SIZE = 1;
     Asteroid.MAX_SIZE = 5;
-    Asteroid.MAX_VELOCITY = 200;
     Asteroids.Asteroid = Asteroid;
 })(Asteroids || (Asteroids = {}));
 var Asteroids;
@@ -175,14 +176,18 @@ var Asteroids;
                 }
                 _this._score += Asteroids.Global.POINTS_PER_HIT;
             };
+            _this._spaceshipHitAsteroid = function (spaceship, asteroid) {
+                spaceship.health -= 1;
+            };
             return _this;
         }
         Play.prototype.render = function () {
             this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, 14, "#ffffff");
             this.game.debug.text("Score:" + this._score, 100, 14, "#ffffff");
-            this.game.debug.text("Lives:" + this._lives, 200, 14, "#ffffff");
-            this.game.debug.text("Level:" + this._level, 300, 14, "#ffffff");
-            this.game.debug.text("Left:" + this._asteroidCount, 400, 14, "#ffffff");
+            this.game.debug.text("Health:" + this._spaceship.health, 200, 14, "#ffffff");
+            this.game.debug.text("Lives:" + this._lives, 300, 14, "#ffffff");
+            this.game.debug.text("Level:" + this._level, 400, 14, "#ffffff");
+            this.game.debug.text("Left:" + this._asteroidCount, 500, 14, "#ffffff");
             this._weapon.debug();
             // this._asteroids.forEachExists(function (sprite: Phaser.Sprite) {
             //     this.game.debug.body(sprite);
@@ -202,6 +207,7 @@ var Asteroids;
             this._spaceship.anchor.setTo(0.5, 0.5);
             this._spaceship.angle = 0;
             this._spaceship.scale = new Phaser.Point(0.5, 0.5);
+            this._spaceship.health = Asteroids.Global.MAX_HEALTH;
             //  and its physics settings
             this.game.physics.enable(this._spaceship, Phaser.Physics.ARCADE);
             this._spaceship.body.drag.set(100);
@@ -211,6 +217,8 @@ var Asteroids;
             this._weapon.bulletSpeed = 300;
             this._weapon.fireRate = 100;
             this._weapon.trackSprite(this._spaceship, 0, 0, true);
+            // healthbar
+            this._healthBar = this.game.add.graphics(0, 0);
             // setup input
             this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
             this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
@@ -228,6 +236,14 @@ var Asteroids;
             }, this);
             //  Collision detection
             this.game.physics.arcade.overlap(this._weapon.bullets, this._asteroids, this._bulletHitAsteroid, null, this);
+            this.game.physics.arcade.overlap(this._spaceship, this._asteroids, this._spaceshipHitAsteroid, null, this);
+            // update health display
+            // health remaining    
+            this._healthBar.clear();
+            this._healthBar.beginFill(0x00ff00);
+            this._healthBar.drawRect(0, 0, this._spaceship.health, 20);
+            this._healthBar.beginFill(0xff0000);
+            this._healthBar.drawRect(this._spaceship.health, 0, this.game.width, 20);
         };
         Play.prototype._startGame = function () {
             this._lives = Asteroids.Global.TOTAL_LIVES;

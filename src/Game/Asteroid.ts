@@ -8,7 +8,6 @@ namespace Asteroids {
         private static scales: number[] = [0.10,0.25,0.50,0.75,1];
         private static MIN_SIZE: number = 1;
         private static MAX_SIZE: number = 5;
-        private static MAX_VELOCITY: number = 200;
         // -------------------------------------------------------------------------
         public constructor(game: Phaser.Game, x:number, y:number, size: number) {
             super(game, 0, 0, "asteroid-01");
@@ -83,8 +82,8 @@ namespace Asteroids {
         }
 
         public startMoving = () => {
-            this.body.velocity.x = (Asteroid.MAX_VELOCITY/2) - (Math.random() * Asteroid.MAX_VELOCITY);
-            this.body.velocity.y = (Asteroid.MAX_VELOCITY/2) - (Math.random() * Asteroid.MAX_VELOCITY);
+            this.body.velocity.x = (Global.MAX_ASTEROID_VELOCITY/2) - (Math.random() * Global.MAX_ASTEROID_VELOCITY);
+            this.body.velocity.y = (Global.MAX_ASTEROID_VELOCITY/2) - (Math.random() * Global.MAX_ASTEROID_VELOCITY);
         }
     }
 }
