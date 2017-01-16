@@ -48,23 +48,78 @@ var Asteroids;
     var Asteroid = (function (_super) {
         __extends(Asteroid, _super);
         // -------------------------------------------------------------------------
-        function Asteroid(game, x, y) {
-            var _this = _super.call(this, game, 0, 0, "Asteroid") || this;
+        function Asteroid(game, x, y, size) {
+            var _this = _super.call(this, game, 0, 0, "asteroid-01") || this;
+            _this._setSize = function (size) {
+                if (size > Asteroid.MAX_SIZE) {
+                    size = Asteroid.MAX_SIZE;
+                }
+                if (size < Asteroid.MIN_SIZE) {
+                    size = Asteroid.MIN_SIZE;
+                }
+                _this._size = size;
+                var scale = Asteroid.scales[size - 1];
+                // scale asteroid based on size
+                _this.scale = new Phaser.Point(scale, scale);
+                var cx = (_this.width * scale) / 2;
+                var cy = (_this.height * scale) / 2;
+                // set body size 25% smaller
+                var scaledWidth = _this.width / scale;
+                var scaledHeight = _this.height / scale;
+                var bodyWidth = scaledWidth * 0.75;
+                var bodyHeight = scaledHeight * 0.75;
+                // offset body from upper left x,y coord by 1/8th the width (25% / 2)
+                _this.body.setSize(bodyWidth, bodyHeight, scaledWidth / 8, scaledHeight / 8);
+            };
+            _this.hitByBullet = function () {
+                // decrease size
+                if (_this._size > Asteroid.MIN_SIZE) {
+                    _this._setSize(_this._size - 1);
+                    // spawn a second asteroid
+                    var second = new Asteroid(_this.game, _this.x, _this.y, _this._size);
+                    second.setGroup(_this._group);
+                    second.addToGroup();
+                    second.startMoving();
+                    return false;
+                }
+                else {
+                    // destroy it
+                    _this.exists = false;
+                    return true;
+                }
+            };
+            _this.setGroup = function (group) {
+                _this._group = group;
+            };
+            _this.addToGroup = function () {
+                _this._group.add(_this);
+            };
+            _this.startMoving = function () {
+                _this.body.velocity.x = (Asteroid.MAX_VELOCITY / 2) - (Math.random() * Asteroid.MAX_VELOCITY);
+                _this.body.velocity.y = (Asteroid.MAX_VELOCITY / 2) - (Math.random() * Asteroid.MAX_VELOCITY);
+            };
             // center player sprite horizontally
             _this.anchor.x = 0.5;
-            _this.loadTexture('asteroid-01');
+            _this.anchor.y = 0.5;
+            //this.loadTexture('asteroid-01');
             // enable physics for asteroid
             game.physics.arcade.enable(_this, false);
             // no gravity
             var body = _this.body;
             body.allowGravity = false;
-            body.setSize(_this.width - 50, _this.height - 50, 25, 25);
+            body.angularVelocity = -100;
+            body.maxVelocity.set(200);
             _this.x = x;
             _this.y = y;
+            _this._setSize(size);
             return _this;
         }
         return Asteroid;
     }(Phaser.Sprite));
+    Asteroid.scales = [0.10, 0.25, 0.50, 0.75, 1];
+    Asteroid.MIN_SIZE = 1;
+    Asteroid.MAX_SIZE = 5;
+    Asteroid.MAX_VELOCITY = 200;
     Asteroids.Asteroid = Asteroid;
 })(Asteroids || (Asteroids = {}));
 var Asteroids;
@@ -98,23 +153,26 @@ var Asteroids;
             _this._initAsteroids = function (count) {
                 _this._asteroids = new Phaser.Group(_this.game);
                 for (var i = 0; i < count; i++) {
-                    //			    var asteroid = this.game.add.sprite( this.game.world.centerX-200, this.game.world.centerY-300+i*100, 'asteroid-01' );
-                    // asteroid.anchor.setTo( 0.5, 0.5 );
-                    // this.game.physics.enable(asteroid, Phaser.Physics.ARCADE);
-                    // // create bounding box smaller that whole asteroid
-                    // asteroid.body.setSize(asteroid.width-50, asteroid.height-50, 25, 25)
-                    var x = _this.game.world.centerX - 200;
-                    var y = _this.game.world.centerY - 300 + i * 100;
-                    var asteroid = new Asteroids.Asteroid(_this.game, x, y);
-                    _this._asteroids.add(asteroid);
+                    var x = _this.game.width * Math.random();
+                    var y = -50;
+                    var asteroid = new Asteroids.Asteroid(_this.game, x, y, 5);
+                    asteroid.setGroup(_this._asteroids);
+                    asteroid.addToGroup();
+                    asteroid.startMoving();
                 }
             };
-            _this._bulletHitAsteroid = function (asteroid, bullet) {
+            _this._bulletHitAsteroid = function (bullet, asteroid) {
                 // we can't kill/destroy the asteroid here as it messes up the underlying array an we'll
                 // get undefined errors as we try to reference deleted objects.
-                asteroid.visible = false;
                 bullet.kill();
-                _this._asteroidCount--;
+                var destroyed = asteroid.hitByBullet();
+                if (destroyed) {
+                    _this._asteroidCount--;
+                }
+                else {
+                    // increase count as asteroid has split in two
+                    _this._asteroidCount++;
+                }
                 _this._score += Asteroids.Global.POINTS_PER_HIT;
             };
             return _this;
@@ -126,9 +184,9 @@ var Asteroids;
             this.game.debug.text("Level:" + this._level, 300, 14, "#ffffff");
             this.game.debug.text("Left:" + this._asteroidCount, 400, 14, "#ffffff");
             this._weapon.debug();
-            this._asteroids.forEachExists(function (sprite) {
-                this.game.debug.body(sprite);
-            }, this);
+            // this._asteroids.forEachExists(function (sprite: Phaser.Sprite) {
+            //     this.game.debug.body(sprite);
+            // }, this);
         };
         // -------------------------------------------------------------------------
         Play.prototype.create = function () {
@@ -164,15 +222,12 @@ var Asteroids;
         // -------------------------------------------------------------------------
         Play.prototype.update = function () {
             this._handleInput();
-            this._wrapShipLocation();
+            this._wrapLocation(this._spaceship);
+            this._asteroids.forEachExists(function (sprite) {
+                this._wrapLocation(sprite);
+            }, this);
             //  Collision detection
             this.game.physics.arcade.overlap(this._weapon.bullets, this._asteroids, this._bulletHitAsteroid, null, this);
-            // this._asteroids.forEachExists(function (asteroid: Phaser.Sprite) {
-            //     this.game.physics.arcade.overlap(this._weapon.bullets, asteroid, this._bulletHitAsteroid, null, this);
-            // }, this);
-            // this._weapon.bullets.forEachExists(function (bullet: Phaser.Sprite) {
-            //     this.game.physics.arcade.overlap(bullet, this._asteroids, this._bulletHitAsteroid, null, this);
-            // }, this);
         };
         Play.prototype._startGame = function () {
             this._lives = Asteroids.Global.TOTAL_LIVES;
@@ -200,27 +255,27 @@ var Asteroids;
                 this._weapon.fire();
             }
         };
-        Play.prototype._wrapShipLocation = function () {
+        Play.prototype._wrapLocation = function (sprite) {
             // check if ship offscreen , wrap around
-            var sx = this._spaceship.x;
-            var sy = this._spaceship.y;
-            var width = this._spaceship.width / 2;
-            var height = this._spaceship.height / 2;
+            var sx = sprite.x;
+            var sy = sprite.y;
+            var width = sprite.width / 2;
+            var height = sprite.height / 2;
             if (sx + width < 0) {
                 // off to left
-                this._spaceship.x = Asteroids.Global.GAME_WIDTH + width;
+                sprite.x = Asteroids.Global.GAME_WIDTH + width;
             }
             else if (sx - width > Asteroids.Global.GAME_WIDTH) {
                 // off to right
-                this._spaceship.x = -width;
+                sprite.x = -width;
             }
             if (sy + height < 0) {
                 // off to the top
-                this._spaceship.y = Asteroids.Global.GAME_HEIGHT + height;
+                sprite.y = Asteroids.Global.GAME_HEIGHT + height;
             }
             else if (sy - height > Asteroids.Global.GAME_HEIGHT) {
                 // off to the bottom
-                this._spaceship.y = -height;
+                sprite.y = -height;
             }
         };
         return Play;

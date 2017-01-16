@@ -29,9 +29,9 @@ namespace Asteroids {
 			this.game.debug.text("Level:" + this._level, 300, 14, "#ffffff");
 			this.game.debug.text("Left:" + this._asteroidCount, 400, 14, "#ffffff");
             this._weapon.debug();
-            this._asteroids.forEachExists(function (sprite: Phaser.Sprite) {
-                this.game.debug.body(sprite);
-            }, this);
+            // this._asteroids.forEachExists(function (sprite: Phaser.Sprite) {
+            //     this.game.debug.body(sprite);
+            // }, this);
             
 		}
 
@@ -81,10 +81,12 @@ namespace Asteroids {
         public update() {
 
             this._handleInput();
-            this._wrapShipLocation();
+            this._wrapLocation(this._spaceship);
+            this._asteroids.forEachExists(function (sprite: Phaser.Sprite) {
+                this._wrapLocation(sprite);
+            }, this);
 
             //  Collision detection
-            
             this.game.physics.arcade.overlap(this._weapon.bullets, this._asteroids, this._bulletHitAsteroid, null, this);
  
         }
@@ -92,10 +94,12 @@ namespace Asteroids {
         private _initAsteroids = (count: number) => {
             this._asteroids = new Phaser.Group(this.game);
             for (var i = 0; i< count; i++) {
-                var x = this.game.world.centerX-200;
-                var y = this.game.world.centerY-300+i*100;
-                var asteroid = new Asteroids.Asteroid(this.game ,x ,y );
-                this._asteroids.add(asteroid);
+                var x = this.game.width * Math.random();
+                var y = -50;
+                var asteroid = new Asteroids.Asteroid(this.game ,x ,y, 5);
+                asteroid.setGroup(this._asteroids)
+                asteroid.addToGroup();
+                asteroid.startMoving();
             }
 
         }
@@ -107,12 +111,17 @@ namespace Asteroids {
             this._asteroidCount = 5;
         }
 
-        private _bulletHitAsteroid = (asteroid: Phaser.Bullet, bullet: Phaser.Bullet) => {
+        private _bulletHitAsteroid = (bullet: Phaser.Bullet,asteroid: Asteroids.Asteroid ) => {
             // we can't kill/destroy the asteroid here as it messes up the underlying array an we'll
             // get undefined errors as we try to reference deleted objects.
-            asteroid.visible = false;
             bullet.kill();
-            this._asteroidCount--;
+            var destroyed = asteroid.hitByBullet();
+            if (destroyed) {
+                this._asteroidCount--;
+            } else {
+                // increase count as asteroid has split in two
+                this._asteroidCount++;
+            }
             this._score += Global.POINTS_PER_HIT;
 
         }
@@ -142,27 +151,28 @@ namespace Asteroids {
 
         }
 
-        private _wrapShipLocation() {
+        private _wrapLocation(sprite: Phaser.Sprite) {
             // check if ship offscreen , wrap around
-            var sx = this._spaceship.x;
-            var sy = this._spaceship.y;
-            var width = this._spaceship.width / 2;
-            var height = this._spaceship.height / 2;
+            var sx = sprite.x;
+            var sy = sprite.y;
+            var width = sprite.width / 2;
+            var height = sprite.height / 2;
 
             if (sx+width < 0) {
                 // off to left
-                this._spaceship.x = Global.GAME_WIDTH+width;
+                sprite.x = Global.GAME_WIDTH+width;
             } else if (sx-width > Global.GAME_WIDTH) {
                 // off to right
-                this._spaceship.x = -width;
+                sprite.x = -width;
             }
             if (sy+height < 0) {
                 // off to the top
-                this._spaceship.y = Global.GAME_HEIGHT+height;
+                sprite.y = Global.GAME_HEIGHT+height;
             } else if (sy-height > Global.GAME_HEIGHT) {
                 // off to the bottom
-                this._spaceship.y = -height;
+                sprite.y = -height;
             }
         }
+ 
     }
 }

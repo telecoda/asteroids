@@ -13,7 +13,8 @@
             "name": "Attach",
             "type": "chrome",
             "request": "attach",
-            "port": 9222
+            "port": 9222,
+            "url": "http://localhost:8888/index.html"
         }
     ]
 }
