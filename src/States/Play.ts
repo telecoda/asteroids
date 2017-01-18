@@ -2,6 +2,14 @@ namespace Asteroids {
 
     export class Play extends Phaser.State {
 
+        static LEVEL_START: number = 1;
+        static PLAYING: number = 2;
+        static LEVEL_END: number = 3;
+        static PLAYER_DIED: number = 4;
+        static GAME_OVER: number = 5;
+        static GAME_COMPLETED: number = 6;
+        static PAUSED: number = 7;
+
         private _background: Phaser.Sprite;
         private _spaceship: Phaser.Sprite;
         private _asteroids: Phaser.Group;
@@ -9,9 +17,10 @@ namespace Asteroids {
         private _weapon: Phaser.Weapon;
         private _bullets: Phaser.Sprite[] = [];
         private _healthBar: Phaser.Graphics;
+        private _statusText: Phaser.Text;
 
-        // status
-        private _gameOver: boolean = false;
+        // state
+        private _state: number;
 
         private _lives: number = 0;
         private _score: number = 0;
@@ -22,19 +31,7 @@ namespace Asteroids {
         private _rightKey: Phaser.Key;
         private _thrustKey: Phaser.Key;
         private _fireKey: Phaser.Key;
-        
-		public render() {
-			this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, 14, "#ffffff");
-			this.game.debug.text("Score:" + this._score, 100, 14, "#ffffff");
-			this.game.debug.text("Health:" + this._spaceship.health, 200, 14, "#ffffff");
-			this.game.debug.text("Lives:" + this._lives, 300, 14, "#ffffff");
-			this.game.debug.text("Level:" + this._level, 400, 14, "#ffffff");
-			this.game.debug.text("Left:" + this._asteroidCount, 500, 14, "#ffffff");
-            this._weapon.debug();
-            // this._asteroids.forEachExists(function (sprite: Phaser.Sprite) {
-            //     this.game.debug.body(sprite);
-            // }, this);
-		}
+        private _pauseKey: Phaser.Key;
 
         // -------------------------------------------------------------------------
         public create() {
@@ -58,15 +55,16 @@ namespace Asteroids {
 		    //  and its physics settings
             this.game.physics.enable(this._spaceship, Phaser.Physics.ARCADE);
 
-            this._spaceship.body.drag.set(100);
-            this._spaceship.body.maxVelocity.set(200);
-
-            this._weapon = this.game.add.weapon(30, 'bullet');
+            this._weapon = this.game.add.weapon(Global.MAX_BULLETS, 'bullet');
             this._weapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
 
-            this._weapon.bulletSpeed = 300;
-            this._weapon.fireRate = 100;
+            this._weapon.bulletSpeed = Global.BULLET_SPEED;
+            this._weapon.fireRate = Global.FIRE_RATE;
             this._weapon.trackSprite(this._spaceship, 0, 0, true);
+
+            // text overlay
+            var textStyle = { font: "72px Arial", fill: "#ffffff", align: "center" };
+            this._statusText = this.game.add.text(0,0, "", textStyle )
 
             // healthbar
             this._healthBar = this.game.add.graphics(0,0);
@@ -75,31 +73,148 @@ namespace Asteroids {
 			this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
 			this._thrustKey = this.game.input.keyboard.addKey(Phaser.Keyboard.UP);
             this._fireKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+            this._pauseKey = this.game.input.keyboard.addKey(Phaser.Keyboard.P);
 
-            this._startGame();
-            this._initAsteroids(this._asteroidCount);
+            this._startNewGame();
 
         }
 
         // -------------------------------------------------------------------------
         public update() {
 
-            this._handleInput();
-            this._wrapLocation(this._spaceship);
-            this._asteroids.forEachExists(function (sprite: Phaser.Sprite) {
-                this._wrapLocation(sprite);
-            }, this);
+            switch(this._state) {
+                case Play.PLAYING: {
+                    // check for level complete
+                    if (this._asteroidCount == 0) {
+                        this._levelCompleted();
+                        break;
+                    }
 
-            //  Collision detection
-            this.game.physics.arcade.overlap(this._weapon.bullets, this._asteroids, this._bulletHitAsteroid, null, this);
-            this.game.physics.arcade.overlap(this._spaceship, this._asteroids, this._spaceshipHitAsteroid, null, this);
-            // update health display
-            // health remaining    
-            this._healthBar.clear();
-            this._healthBar.beginFill(0x00ff00);
-            this._healthBar.drawRect(0, 0, this._spaceship.health, 20);
-            this._healthBar.beginFill(0xff0000);
-            this._healthBar.drawRect(this._spaceship.health, 0, this.game.width, 20);
+                    if (this._spaceship.health <= 0) {
+                        this._playerDied();
+                    }
+                    this._handleInput();
+                    this._wrapLocation(this._spaceship);
+                    this._asteroids.forEachExists(function (sprite: Phaser.Sprite) {
+                        this._wrapLocation(sprite);
+                    }, this);
+
+                    //  Collision detection
+                    this.game.physics.arcade.overlap(this._weapon.bullets, this._asteroids, this._bulletHitAsteroid, null, this);
+                    this.game.physics.arcade.overlap(this._spaceship, this._asteroids, this._spaceshipHitAsteroid, null, this);
+                    // update health display
+                    // health remaining    
+                    this._healthBar.clear();
+                    this._healthBar.beginFill(0x00ff00);
+                    this._healthBar.drawRect(0, 0, this._spaceship.health, 20);
+                    this._healthBar.beginFill(0xff0000);
+                    this._healthBar.drawRect(this._spaceship.health, 0, this.game.width, 20);
+                    break;
+                }
+            }
+        }
+
+        
+		public render() {
+			this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, 14, "#ffffff");
+			this.game.debug.text("Score:" + this._score, 100, 14, "#ffffff");
+			this.game.debug.text("Health:" + this._spaceship.health, 200, 14, "#ffffff");
+			this.game.debug.text("Lives:" + this._lives, 300, 14, "#ffffff");
+			this.game.debug.text("Level:" + this._level, 400, 14, "#ffffff");
+			this.game.debug.text("Left:" + this._asteroidCount, 500, 14, "#ffffff");
+            this._weapon.debug();
+            // this._asteroids.forEachExists(function (sprite: Phaser.Sprite) {
+            //     this.game.debug.body(sprite);
+            // }, this);
+		}
+
+        private _startNewGame = () => {
+            this._setStatus("Start level 1");
+            this._state = Play.LEVEL_START;
+            this._lives = Global.TOTAL_LIVES;
+            this._score = 0;
+            this._level = 1;
+            this._startLevel();
+        }
+
+        private _startLevel = () => {
+            this._setStatus("Starting level " + this._level);
+            this._state = Play.LEVEL_START;
+            this._asteroidCount = this._level * Global.ASTEROID_MULTIPLIER;
+            this._initAsteroids(this._asteroidCount);
+            //  Wait 2 seconds then start level
+            this.game.time.events.add(Phaser.Timer.SECOND * 2, this._startPlaying, this);
+        }
+
+        private _startNextLevel = () => {
+            this._setStatus("");
+            if (this._level < Global.TOTAL_LEVELS) {
+                this._level++;
+                this._startLevel();
+            } else {
+                // game complete!
+                this._gameCompleted();
+            }
+        }
+
+        private _levelCompleted = () => {
+            this._setStatus("Level " + this._level + " complete");
+            this._state = Play.LEVEL_END;
+            //  Wait 2 seconds then start a next level
+            this.game.time.events.add(Phaser.Timer.SECOND * 2, this._startNextLevel, this);
+        }
+
+        private _gameCompleted = () => {
+            this._setStatus("Congratulations - Game Complete!");
+            this._state = Play.GAME_COMPLETED;
+        }
+
+        private _gameOver = () => {
+            this._setStatus("Game Over");
+            this._state = Play.GAME_OVER;
+        }
+
+        private _startPlaying = () => {
+            this._hideStatus();
+            this._resetPlayer();
+            this._state = Play.PLAYING;
+        }
+
+        private _resetPlayer = () => {
+            this._spaceship.health = Global.MAX_HEALTH;
+            this._spaceship.body.drag.set(Global.SHIP_DRAG);
+            this._spaceship.body.maxVelocity.set(Global.SHIP_MAX_VELOCITY);
+            this._spaceship.angle = 0;
+            this._spaceship.x = this.game.world.centerX;
+            this._spaceship.y = this.game.world.centerY
+        }
+
+        private _resumePlaying = () => {
+            this._setStatus("Keep going...");
+            this._state = Play.LEVEL_START;
+            //  Wait 2 seconds then start level
+            this.game.time.events.add(Phaser.Timer.SECOND * 2, this._startPlaying, this);
+        }
+
+        private _playerDied = () => {
+            this._state = Play.PLAYER_DIED;
+            this._lives--;
+            if (this._lives < 1) {
+                this._gameOver();
+                return;
+            }
+            this._resumePlaying();
+        }
+
+        private _setStatus = (text: string) => {
+            this._statusText.setText(text);
+            this._statusText.x = this.game.width/2 - this._statusText.width/2;
+            this._statusText.y = this.game.height/2 - this._statusText.height/2; 
+            this._statusText.visible = true;
+        } 
+
+        private _hideStatus = () => {
+            this._statusText.visible = false;
         }
 
         private _initAsteroids = (count: number) => {
@@ -112,14 +227,6 @@ namespace Asteroids {
                 asteroid.addToGroup();
                 asteroid.startMoving();
             }
-
-        }
-
-        private _startGame() {
-            this._lives = Global.TOTAL_LIVES;
-            this._score = 0;
-            this._level = 1;
-            this._asteroidCount = 5;
         }
 
         private _bulletHitAsteroid = (bullet: Phaser.Bullet,asteroid: Asteroids.Asteroid ) => {
@@ -137,7 +244,7 @@ namespace Asteroids {
         }
 
         private _spaceshipHitAsteroid = (spaceship: Phaser.Sprite,asteroid: Asteroids.Asteroid ) => {
-            spaceship.health -= 1;
+            spaceship.health -= Global.ASTEROID_DAMAGE;
         }
 
 

@@ -24,7 +24,7 @@ namespace Asteroids {
             if (this._ready === false) {
                 this._ready = true;
 
-                this.game.state.start("Play");
+                this.game.state.start("Menu");
             }
         }
     }
