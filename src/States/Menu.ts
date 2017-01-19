@@ -19,7 +19,6 @@ namespace Asteroids {
             this._startText.x = this.game.width/2 - this._startText.width/2;
             this._startText.y = this.game.height/2 - this._startText.height/2; 
             this._startKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-
         }
 
         // -------------------------------------------------------------------------

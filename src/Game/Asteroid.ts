@@ -15,8 +15,7 @@ namespace Asteroids {
             // center player sprite horizontally
             this.anchor.x = 0.5;
             this.anchor.y = 0.5;
-            //this.loadTexture('asteroid-01');
-            // enable physics for asteroid
+            // disable physics for asteroid
             game.physics.arcade.enable(this, false);
 
             // no gravity

@@ -11,6 +11,7 @@ namespace Asteroids {
             this.state.add("Preload", Preload);
             this.state.add("Menu", Menu);
             this.state.add("Play", Play);
+            this.state.add("GameOver", GameOver);
 
             // start
             this.state.start("Boot");

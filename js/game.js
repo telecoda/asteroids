@@ -49,6 +49,7 @@ var Asteroids;
             _this.state.add("Preload", Asteroids.Preload);
             _this.state.add("Menu", Asteroids.Menu);
             _this.state.add("Play", Asteroids.Play);
+            _this.state.add("GameOver", Asteroids.GameOver);
             // start
             _this.state.start("Boot");
             return _this;
@@ -115,8 +116,7 @@ var Asteroids;
             // center player sprite horizontally
             _this.anchor.x = 0.5;
             _this.anchor.y = 0.5;
-            //this.loadTexture('asteroid-01');
-            // enable physics for asteroid
+            // disable physics for asteroid
             game.physics.arcade.enable(_this, false);
             // no gravity
             var body = _this.body;
@@ -149,6 +149,40 @@ var Asteroids;
         return Boot;
     }(Phaser.State));
     Asteroids.Boot = Boot;
+})(Asteroids || (Asteroids = {}));
+var Asteroids;
+(function (Asteroids) {
+    var GameOver = (function (_super) {
+        __extends(GameOver, _super);
+        function GameOver() {
+            return _super.apply(this, arguments) || this;
+        }
+        // -------------------------------------------------------------------------
+        GameOver.prototype.create = function () {
+            // init background
+            this._background = this.game.add.sprite(this.game.world.centerX, this.game.world.centerY, 'stars');
+            this._background.anchor.setTo(0.5, 0.5);
+            // text 
+            var textStyle = { font: "72px Arial", fill: "#ff0000", align: "center" };
+            this._gameOverText = this.game.add.text(50, 50, "Game Over", textStyle);
+            this._gameOverText.x = this.game.width / 2 - this._gameOverText.width / 2;
+            this._gameOverText.y = this.game.height / 2 - this._gameOverText.height / 2;
+            this._continueKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+        };
+        // -------------------------------------------------------------------------
+        GameOver.prototype.update = function () {
+            if (this._continueKey.isDown) {
+                this.game.state.start("Menu");
+            }
+        };
+        GameOver.prototype.render = function () {
+            this.game.debug.text("Score:" + Asteroids.Global._score, 100, 14, "#ffffff");
+            this.game.debug.text("Lives:" + Asteroids.Global._lives, 300, 14, "#ffffff");
+            this.game.debug.text("Level:" + Asteroids.Global._level, 400, 14, "#ffffff");
+        };
+        return GameOver;
+    }(Phaser.State));
+    Asteroids.GameOver = GameOver;
 })(Asteroids || (Asteroids = {}));
 var Asteroids;
 (function (Asteroids) {
@@ -187,29 +221,26 @@ var Asteroids;
             var _this = _super.apply(this, arguments) || this;
             _this._asteroidCount = 0;
             _this._bullets = [];
-            _this._lives = 0;
-            _this._score = 0;
-            _this._level = 0;
             _this._startNewGame = function () {
                 _this._setStatus("Start level 1");
                 _this._state = Play.LEVEL_START;
-                _this._lives = Asteroids.Global.TOTAL_LIVES;
-                _this._score = 0;
-                _this._level = 1;
+                Asteroids.Global._lives = Asteroids.Global.TOTAL_LIVES;
+                Asteroids.Global._score = 0;
+                Asteroids.Global._level = 1;
                 _this._startLevel();
             };
             _this._startLevel = function () {
-                _this._setStatus("Starting level " + _this._level);
+                _this._setStatus("Starting level " + Asteroids.Global._level);
                 _this._state = Play.LEVEL_START;
-                _this._asteroidCount = _this._level * Asteroids.Global.ASTEROID_MULTIPLIER;
+                _this._asteroidCount = Asteroids.Global._level * Asteroids.Global.ASTEROID_MULTIPLIER;
                 _this._initAsteroids(_this._asteroidCount);
                 //  Wait 2 seconds then start level
                 _this.game.time.events.add(Phaser.Timer.SECOND * 2, _this._startPlaying, _this);
             };
             _this._startNextLevel = function () {
                 _this._setStatus("");
-                if (_this._level < Asteroids.Global.TOTAL_LEVELS) {
-                    _this._level++;
+                if (Asteroids.Global._level < Asteroids.Global.TOTAL_LEVELS) {
+                    Asteroids.Global._level++;
                     _this._startLevel();
                 }
                 else {
@@ -218,7 +249,7 @@ var Asteroids;
                 }
             };
             _this._levelCompleted = function () {
-                _this._setStatus("Level " + _this._level + " complete");
+                _this._setStatus("Level " + Asteroids.Global._level + " complete");
                 _this._state = Play.LEVEL_END;
                 //  Wait 2 seconds then start a next level
                 _this.game.time.events.add(Phaser.Timer.SECOND * 2, _this._startNextLevel, _this);
@@ -228,8 +259,7 @@ var Asteroids;
                 _this._state = Play.GAME_COMPLETED;
             };
             _this._gameOver = function () {
-                _this._setStatus("Game Over");
-                _this._state = Play.GAME_OVER;
+                _this.game.state.start("GameOver");
             };
             _this._startPlaying = function () {
                 _this._hideStatus();
@@ -252,12 +282,15 @@ var Asteroids;
             };
             _this._playerDied = function () {
                 _this._state = Play.PLAYER_DIED;
-                _this._lives--;
-                if (_this._lives < 1) {
+                Asteroids.Global._lives--;
+                if (Asteroids.Global._lives < 1) {
                     _this._gameOver();
                     return;
                 }
                 _this._resumePlaying();
+            };
+            _this._pauseToggle = function () {
+                _this.game.paused = true;
             };
             _this._setStatus = function (text) {
                 _this._statusText.setText(text);
@@ -291,7 +324,18 @@ var Asteroids;
                     // increase count as asteroid has split in two
                     _this._asteroidCount++;
                 }
-                _this._score += Asteroids.Global.POINTS_PER_HIT;
+                Asteroids.Global._score += Asteroids.Global.POINTS_PER_HIT;
+                // create explosion
+                _this._createExplosionAt(bullet.x, bullet.y);
+            };
+            _this._createExplosionAt = function (x, y) {
+                var explosion = new Phaser.Sprite(_this.game, x, y);
+                explosion.anchor.x = 0.5;
+                explosion.anchor.y = 0.5;
+                explosion.loadTexture("explosion", 0);
+                explosion.animations.add("boom");
+                explosion.animations.play("boom", 10, false, true);
+                _this._explosions.add(explosion);
             };
             _this._spaceshipHitAsteroid = function (spaceship, asteroid) {
                 spaceship.health -= Asteroids.Global.ASTEROID_DAMAGE;
@@ -331,6 +375,8 @@ var Asteroids;
             this._thrustKey = this.game.input.keyboard.addKey(Phaser.Keyboard.UP);
             this._fireKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
             this._pauseKey = this.game.input.keyboard.addKey(Phaser.Keyboard.P);
+            // animations
+            this._explosions = new Phaser.Group(this.game);
             this._startNewGame();
         };
         // -------------------------------------------------------------------------
@@ -366,15 +412,12 @@ var Asteroids;
         };
         Play.prototype.render = function () {
             this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, 14, "#ffffff");
-            this.game.debug.text("Score:" + this._score, 100, 14, "#ffffff");
+            this.game.debug.text("Score:" + Asteroids.Global._score, 100, 14, "#ffffff");
             this.game.debug.text("Health:" + this._spaceship.health, 200, 14, "#ffffff");
-            this.game.debug.text("Lives:" + this._lives, 300, 14, "#ffffff");
-            this.game.debug.text("Level:" + this._level, 400, 14, "#ffffff");
+            this.game.debug.text("Lives:" + Asteroids.Global._lives, 300, 14, "#ffffff");
+            this.game.debug.text("Level:" + Asteroids.Global._level, 400, 14, "#ffffff");
             this.game.debug.text("Left:" + this._asteroidCount, 500, 14, "#ffffff");
             this._weapon.debug();
-            // this._asteroids.forEachExists(function (sprite: Phaser.Sprite) {
-            //     this.game.debug.body(sprite);
-            // }, this);
         };
         Play.prototype._handleInput = function () {
             if (this._thrustKey.isDown) {
@@ -394,6 +437,9 @@ var Asteroids;
             }
             if (this._fireKey.isDown) {
                 this._weapon.fire();
+            }
+            if (this._pauseKey.isDown) {
+                this._pauseToggle();
             }
         };
         Play.prototype._wrapLocation = function (sprite) {
@@ -425,9 +471,8 @@ var Asteroids;
     Play.PLAYING = 2;
     Play.LEVEL_END = 3;
     Play.PLAYER_DIED = 4;
-    Play.GAME_OVER = 5;
-    Play.GAME_COMPLETED = 6;
-    Play.PAUSED = 7;
+    Play.GAME_COMPLETED = 5;
+    Play.PAUSED = 6;
     Asteroids.Play = Play;
 })(Asteroids || (Asteroids = {}));
 var Asteroids;
@@ -446,6 +491,7 @@ var Asteroids;
             this.load.image("asteroid-01", "assets/asteroid-01.png");
             this.load.image("spaceship", "assets/spaceship.png");
             this.load.image("bullet", "assets/bullet.png");
+            this.load.spritesheet("explosion", "assets/explosion_spritesheet.png", 128, 128, 70);
         };
         // -------------------------------------------------------------------------
         Preload.prototype.create = function () {
