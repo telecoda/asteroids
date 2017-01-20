@@ -13,11 +13,15 @@ namespace Asteroids {
         private _spaceship: Phaser.Sprite;
         private _asteroids: Phaser.Group;
         private _explosions: Phaser.Group;
+        private _hud: Phaser.Group;
         private _asteroidCount: number = 0;
         private _weapon: Phaser.Weapon;
         private _bullets: Phaser.Sprite[] = [];
         private _healthBar: Phaser.Graphics;
         private _statusText: Phaser.Text;
+        private _levelText: Phaser.Text;
+        private _scoreText: Phaser.Text;
+        private _livesText: Phaser.Text;
 
         // animations
         private _explosion: Phaser.Animation;
@@ -61,18 +65,31 @@ namespace Asteroids {
             this._weapon.fireRate = Global.FIRE_RATE;
             this._weapon.trackSprite(this._spaceship, 0, 0, true);
 
-            // text overlay
-            var textStyle = { font: "72px Arial", fill: "#ffffff", align: "center" };
-            this._statusText = this.game.add.text(0,0, "", textStyle )
-
+            // text overlays
+            var statusTextStyle = { font: "72px Arial", fill: "#ffffff", align: "center" };
+            this._statusText = this.game.add.text(0,0, "", statusTextStyle )
+            // hud 
+            this._hud = new Phaser.Group(this.game);
+            var hudTextStyle = { font: "24px Arial", fill: "#ffffff", align: "center" };
+            this._scoreText = this.game.add.text(0,0, "", hudTextStyle )
+            this._levelText = this.game.add.text(0,0, "", hudTextStyle )
+            this._livesText = this.game.add.text(0,0, "", hudTextStyle )
             // healthbar
             this._healthBar = this.game.add.graphics(0,0);
+
+            this._hud.add(this._scoreText);
+            this._hud.add(this._levelText);
+            this._hud.add(this._livesText);
+            this._hud.add(this._healthBar);
+
 			// setup input
 			this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
 			this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
 			this._thrustKey = this.game.input.keyboard.addKey(Phaser.Keyboard.UP);
             this._fireKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
             this._pauseKey = this.game.input.keyboard.addKey(Phaser.Keyboard.P);
+
+            this._pauseKey.onDown.add(this._pauseToggle, this);
 
             // animations
             this._explosions = new Phaser.Group(this.game);
@@ -105,26 +122,34 @@ namespace Asteroids {
                     this.game.physics.arcade.overlap(this._weapon.bullets, this._asteroids, this._bulletHitAsteroid, null, this);
                     this.game.physics.arcade.overlap(this._spaceship, this._asteroids, this._spaceshipHitAsteroid, null, this);
                     // update health display
-                    // health remaining    
-                    this._healthBar.clear();
-                    this._healthBar.beginFill(0x00ff00);
-                    this._healthBar.drawRect(0, 0, this._spaceship.health, 20);
-                    this._healthBar.beginFill(0xff0000);
-                    this._healthBar.drawRect(this._spaceship.health, 0, this.game.width, 20);
+                    // health remaining
+                    this._updateHealthBar();    
                     break;
                 }
             }
         }
 
+        private _updateHealthBar = () => {
+            this._healthBar.x = this.game.width/2 - this._healthBar.width/2; 
+            this._healthBar.y = this.game.height - this._healthBar.height - Global.HUD_BORDER;
+            this._healthBar.clear();
+            this._healthBar.beginFill(0x00ff00);
+            this._healthBar.drawRect(0, 0, this._spaceship.health, 20);
+            this._healthBar.endFill();
+            this._healthBar.beginFill(0xff0000);
+            this._healthBar.drawRect(this._spaceship.health, 0, this.game.width, 20);
+            this._healthBar.endFill();
+            
+        }
         
 		public render() {
-			this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, 14, "#ffffff");
-			this.game.debug.text("Score:" + Global._score, 100, 14, "#ffffff");
-			this.game.debug.text("Health:" + this._spaceship.health, 200, 14, "#ffffff");
-			this.game.debug.text("Lives:" + Global._lives, 300, 14, "#ffffff");
-			this.game.debug.text("Level:" + Global._level, 400, 14, "#ffffff");
-			this.game.debug.text("Left:" + this._asteroidCount, 500, 14, "#ffffff");
-            this._weapon.debug();
+			this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, 80, "#ffffff");
+			this.game.debug.text("Score:" + Global._score, 100, 80, "#ffffff");
+			this.game.debug.text("Health:" + this._spaceship.health, 200, 80, "#ffffff");
+			this.game.debug.text("Lives:" + Global._lives, 300, 80, "#ffffff");
+			this.game.debug.text("Level:" + Global._level, 400, 80, "#ffffff");
+			this.game.debug.text("Left:" + this._asteroidCount, 500, 80, "#ffffff");
+            //this._weapon.debug();
   		}
 
         private _startNewGame = () => {
@@ -133,12 +158,17 @@ namespace Asteroids {
             Global._lives = Global.TOTAL_LIVES;
             Global._score = 0;
             Global._level = 1;
+            this._increaseScore(0); // init score label
+            this._updateHealthBar();
             this._startLevel();
         }
 
         private _startLevel = () => {
             this._setStatus("Starting level " + Global._level);
             this._state = Play.LEVEL_START;
+            this._levelText.setText("Level:"+ Global._level);
+            this._levelText.y = Global.HUD_Y;
+            this._levelText.x = Global.HUD_BORDER;
             this._asteroidCount = Global._level * Global.ASTEROID_MULTIPLIER;
             this._initAsteroids(this._asteroidCount);
             //  Wait 2 seconds then start level
@@ -205,7 +235,7 @@ namespace Asteroids {
         }
 
         private _pauseToggle = () => {
-            this.game.paused = true;
+            this.game.paused = !this.game.paused;
         }
 
         private _setStatus = (text: string) => {
@@ -242,9 +272,16 @@ namespace Asteroids {
                 // increase count as asteroid has split in two
                 this._asteroidCount++;
             }
-            Global._score += Global.POINTS_PER_HIT;
+            this._increaseScore(Global.POINTS_PER_HIT);
             // create explosion
             this._createExplosionAt(bullet.x,bullet.y);
+        }
+
+        private _increaseScore = (inc: number) => {
+            Global._score += inc;
+            this._scoreText.setText("Score:"+ Global._score);
+            this._scoreText.y = Global.HUD_Y;
+            this._scoreText.x = this.game.width - this._scoreText.width - Global.HUD_BORDER;
         }
 
         private _createExplosionAt = (x: number, y:number) => {
@@ -284,10 +321,6 @@ namespace Asteroids {
 
             if (this._fireKey.isDown) {
                 this._weapon.fire()
-            }
-
-            if (this._pauseKey.isDown) {
-                this._pauseToggle()
             }
 
         }

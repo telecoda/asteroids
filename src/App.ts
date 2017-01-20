@@ -12,6 +12,10 @@ namespace Asteroids {
         static TOTAL_LIVES: number = 3;
         static TOTAL_LEVELS: number = 3;
         static POINTS_PER_HIT: number = 5;
+        static HUD_Y: number = 20;
+        static HUD_BORDER: number = 20;
+        static HEALTHBAR_HEIGHT: number = 10;
+        static HEALTHBAR_WIDTH: number = 800;
         // ship
         static SHIP_DRAG : number = 100;
         static SHIP_MAX_VELOCITY: number = 200;
