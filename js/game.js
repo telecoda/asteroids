@@ -226,14 +226,18 @@ var Asteroids;
             _this._asteroidCount = 0;
             _this._bullets = [];
             _this._updateHealthBar = function () {
-                _this._healthBar.x = _this.game.width / 2 - _this._healthBar.width / 2;
-                _this._healthBar.y = _this.game.height - _this._healthBar.height - Asteroids.Global.HUD_BORDER;
+                _this._healthBar.x = _this.game.width / 2 - Asteroids.Global.HEALTHBAR_WIDTH / 2;
+                _this._healthBar.y = _this.game.height - Asteroids.Global.HEALTHBAR_HEIGHT - Asteroids.Global.HUD_BORDER;
                 _this._healthBar.clear();
+                // draw green
                 _this._healthBar.beginFill(0x00ff00);
-                _this._healthBar.drawRect(0, 0, _this._spaceship.health, 20);
+                var healthEnd = _this._spaceship.health * (Asteroids.Global.HEALTHBAR_WIDTH / Asteroids.Global.MAX_HEALTH);
+                _this._healthBar.drawRect(0, 0, healthEnd, Asteroids.Global.HEALTHBAR_HEIGHT);
                 _this._healthBar.endFill();
+                // draw red
                 _this._healthBar.beginFill(0xff0000);
-                _this._healthBar.drawRect(_this._spaceship.health, 0, _this.game.width, 20);
+                //this._healthBar.drawRect(healthEnd, 0, Global.HEALTHBAR_WIDTH/Global.MAX_HEALTH, Global.HEALTHBAR_HEIGHT);
+                _this._healthBar.drawRect(healthEnd, 0, healthEnd + 10, Asteroids.Global.HEALTHBAR_HEIGHT);
                 _this._healthBar.endFill();
             };
             _this._startNewGame = function () {
@@ -243,6 +247,7 @@ var Asteroids;
                 Asteroids.Global._score = 0;
                 Asteroids.Global._level = 1;
                 _this._increaseScore(0); // init score label
+                _this._resetPlayer();
                 _this._updateHealthBar();
                 _this._startLevel();
             };
@@ -283,11 +288,10 @@ var Asteroids;
             };
             _this._startPlaying = function () {
                 _this._hideStatus();
-                _this._resetPlayer();
                 _this._state = Play.PLAYING;
             };
             _this._resetPlayer = function () {
-                _this._spaceship.health = Asteroids.Global.MAX_HEALTH;
+                _this._spaceship.health = Asteroids.Global.MAX_HEALTH / 2;
                 _this._spaceship.body.drag.set(Asteroids.Global.SHIP_DRAG);
                 _this._spaceship.body.maxVelocity.set(Asteroids.Global.SHIP_MAX_VELOCITY);
                 _this._spaceship.angle = 0;
@@ -307,6 +311,7 @@ var Asteroids;
                     _this._gameOver();
                     return;
                 }
+                _this._resetPlayer();
                 _this._resumePlaying();
             };
             _this._pauseToggle = function () {
@@ -382,7 +387,6 @@ var Asteroids;
             this._spaceship.anchor.setTo(0.5, 0.5);
             this._spaceship.angle = 0;
             this._spaceship.scale = new Phaser.Point(0.5, 0.5);
-            this._spaceship.health = Asteroids.Global.MAX_HEALTH;
             //  and its physics settings
             this.game.physics.enable(this._spaceship, Phaser.Physics.ARCADE);
             this._weapon = this.game.add.weapon(Asteroids.Global.MAX_BULLETS, 'bullet');
@@ -401,6 +405,7 @@ var Asteroids;
             this._livesText = this.game.add.text(0, 0, "", hudTextStyle);
             // healthbar
             this._healthBar = this.game.add.graphics(0, 0);
+            this._updateHealthBar();
             this._hud.add(this._scoreText);
             this._hud.add(this._levelText);
             this._hud.add(this._livesText);
