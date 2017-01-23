@@ -141,8 +141,8 @@ namespace Asteroids {
         
             // draw red
             this._healthBar.beginFill(0xff0000);
-            //this._healthBar.drawRect(healthEnd, 0, Global.HEALTHBAR_WIDTH/Global.MAX_HEALTH, Global.HEALTHBAR_HEIGHT);
-            this._healthBar.drawRect(healthEnd, 0, healthEnd+10, Global.HEALTHBAR_HEIGHT);
+            this._healthBar.drawRect(healthEnd, 0, Global.HEALTHBAR_WIDTH-healthEnd, Global.HEALTHBAR_HEIGHT);
+            //this._healthBar.drawRect(healthEnd, 0, healthEnd+10, Global.HEALTHBAR_HEIGHT);
             this._healthBar.endFill();
         }
         
@@ -163,7 +163,7 @@ namespace Asteroids {
             Global._score = 0;
             Global._level = 1;
             this._increaseScore(0); // init score label
-            this._resetPlayer();
+            this._resetPlayer(Global.MAX_HEALTH);
             this._updateHealthBar();
             this._startLevel();
         }
@@ -184,6 +184,7 @@ namespace Asteroids {
             this._setStatus("");
             if (Global._level < Global.TOTAL_LEVELS) {
                 Global._level++;
+                this._resetPlayer(this._spaceship.health); // reset play but dont change health
                 this._startLevel();
             } else {
                 // game complete!
@@ -212,8 +213,8 @@ namespace Asteroids {
             this._state = Play.PLAYING;
         }
 
-        private _resetPlayer = () => {
-            this._spaceship.health = Global.MAX_HEALTH/2;
+        private _resetPlayer = (health: number) => {
+            this._spaceship.health = health;
             this._spaceship.body.drag.set(Global.SHIP_DRAG);
             this._spaceship.body.maxVelocity.set(Global.SHIP_MAX_VELOCITY);
             this._spaceship.angle = 0;
@@ -235,7 +236,7 @@ namespace Asteroids {
                 this._gameOver();
                 return;
             }
-            this._resetPlayer();
+            this._resetPlayer(Global.MAX_HEALTH);
             this._resumePlaying();
         }
 
