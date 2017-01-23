@@ -237,7 +237,6 @@ var Asteroids;
                 // draw red
                 _this._healthBar.beginFill(0xff0000);
                 _this._healthBar.drawRect(healthEnd, 0, Asteroids.Global.HEALTHBAR_WIDTH - healthEnd, Asteroids.Global.HEALTHBAR_HEIGHT);
-                //this._healthBar.drawRect(healthEnd, 0, healthEnd+10, Global.HEALTHBAR_HEIGHT);
                 _this._healthBar.endFill();
             };
             _this._startNewGame = function () {
@@ -249,14 +248,15 @@ var Asteroids;
                 _this._increaseScore(0); // init score label
                 _this._resetPlayer(Asteroids.Global.MAX_HEALTH);
                 _this._updateHealthBar();
+                _this._updateLivesText();
                 _this._startLevel();
             };
             _this._startLevel = function () {
                 _this._setStatus("Starting level " + Asteroids.Global._level);
                 _this._state = Play.LEVEL_START;
-                _this._levelText.setText("Level:" + Asteroids.Global._level);
-                _this._levelText.y = Asteroids.Global.HUD_Y;
-                _this._levelText.x = Asteroids.Global.HUD_BORDER;
+                _this._levelFont.setText("Level:" + Asteroids.Global._level);
+                _this._levelLabel.y = Asteroids.Global.HUD_Y;
+                _this._levelLabel.x = Asteroids.Global.HUD_BORDER;
                 _this._asteroidCount = Asteroids.Global._level * Asteroids.Global.ASTEROID_MULTIPLIER;
                 _this._initAsteroids(_this._asteroidCount);
                 //  Wait 2 seconds then start level
@@ -308,6 +308,7 @@ var Asteroids;
             _this._playerDied = function () {
                 _this._state = Play.PLAYER_DIED;
                 Asteroids.Global._lives--;
+                _this._updateLivesText();
                 if (Asteroids.Global._lives < 1) {
                     _this._gameOver();
                     return;
@@ -354,11 +355,16 @@ var Asteroids;
                 // create explosion
                 _this._createExplosionAt(bullet.x, bullet.y);
             };
+            _this._updateLivesText = function () {
+                _this._livesFont.setText("Lives:" + Asteroids.Global._lives);
+                _this._livesLabel.y = Asteroids.Global.HUD_Y;
+                _this._livesLabel.x = _this.game.width - _this._livesLabel.width - Asteroids.Global.HUD_BORDER;
+            };
             _this._increaseScore = function (inc) {
                 Asteroids.Global._score += inc;
-                _this._scoreText.setText("Score:" + Asteroids.Global._score);
-                _this._scoreText.y = Asteroids.Global.HUD_Y;
-                _this._scoreText.x = _this.game.width - _this._scoreText.width - Asteroids.Global.HUD_BORDER;
+                _this._scoreFont.setText("Score:" + Asteroids.Global._score);
+                _this._scoreLabel.y = Asteroids.Global.HUD_Y;
+                _this._scoreLabel.x = _this.game.width / 2 - _this._scoreLabel.width / 2;
             };
             _this._createExplosionAt = function (x, y) {
                 var explosion = new Phaser.Sprite(_this.game, x, y);
@@ -400,16 +406,19 @@ var Asteroids;
             this._statusText = this.game.add.text(0, 0, "", statusTextStyle);
             // hud 
             this._hud = new Phaser.Group(this.game);
-            var hudTextStyle = { font: "24px Arial", fill: "#ffffff", align: "center" };
-            this._scoreText = this.game.add.text(0, 0, "", hudTextStyle);
-            this._levelText = this.game.add.text(0, 0, "", hudTextStyle);
-            this._livesText = this.game.add.text(0, 0, "", hudTextStyle);
+            var fontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-";
+            this._scoreFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
+            this._scoreLabel = this.game.add.image(0, 0, this._scoreFont);
+            this._levelFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
+            this._levelLabel = this.game.add.image(0, 0, this._levelFont);
+            this._livesFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
+            this._livesLabel = this.game.add.image(0, 0, this._livesFont);
             // healthbar
             this._healthBar = this.game.add.graphics(0, 0);
             this._updateHealthBar();
-            this._hud.add(this._scoreText);
-            this._hud.add(this._levelText);
-            this._hud.add(this._livesText);
+            this._hud.add(this._scoreLabel);
+            this._hud.add(this._levelLabel);
+            this._hud.add(this._livesLabel);
             this._hud.add(this._healthBar);
             // setup input
             this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
@@ -451,12 +460,12 @@ var Asteroids;
         };
         Play.prototype.render = function () {
             this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, 80, "#ffffff");
-            this.game.debug.text("Score:" + Asteroids.Global._score, 100, 80, "#ffffff");
-            this.game.debug.text("Health:" + this._spaceship.health, 200, 80, "#ffffff");
-            this.game.debug.text("Lives:" + Asteroids.Global._lives, 300, 80, "#ffffff");
-            this.game.debug.text("Level:" + Asteroids.Global._level, 400, 80, "#ffffff");
-            this.game.debug.text("Left:" + this._asteroidCount, 500, 80, "#ffffff");
-            //this._weapon.debug();
+            // this.game.debug.text("Score:" + Global._score, 100, 80, "#ffffff");
+            // this.game.debug.text("Health:" + this._spaceship.health, 200, 80, "#ffffff");
+            // this.game.debug.text("Lives:" + Global._lives, 300, 80, "#ffffff");
+            // this.game.debug.text("Level:" + Global._level, 400, 80, "#ffffff");
+            // this.game.debug.text("Left:" + this._asteroidCount, 500, 80, "#ffffff");
+            // this._weapon.debug();
         };
         Play.prototype._handleInput = function () {
             if (this._thrustKey.isDown) {
@@ -528,6 +537,7 @@ var Asteroids;
             this.load.image("spaceship", "assets/spaceship.png");
             this.load.image("bullet", "assets/bullet.png");
             this.load.spritesheet("explosion", "assets/explosion_spritesheet.png", 128, 128, 70);
+            this.game.load.image('chrome-font', 'assets/fonts/ST_ADM.GIF');
         };
         // -------------------------------------------------------------------------
         Preload.prototype.create = function () {

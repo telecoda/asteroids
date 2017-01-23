@@ -18,13 +18,18 @@ namespace Asteroids {
         private _weapon: Phaser.Weapon;
         private _bullets: Phaser.Sprite[] = [];
         private _healthBar: Phaser.Graphics;
+        // text
         private _statusText: Phaser.Text;
-        private _levelText: Phaser.Text;
-        private _scoreText: Phaser.Text;
-        private _livesText: Phaser.Text;
+        private _levelFont: Phaser.RetroFont;
+        private _scoreFont: Phaser.RetroFont;
+        private _livesFont: Phaser.RetroFont;
+        private _levelLabel: Phaser.Image;
+        private _scoreLabel: Phaser.Image;
+        private _livesLabel: Phaser.Image;
 
         // animations
         private _explosion: Phaser.Animation;
+
 
         // state
         private _state: number;
@@ -69,17 +74,20 @@ namespace Asteroids {
             this._statusText = this.game.add.text(0,0, "", statusTextStyle )
             // hud 
             this._hud = new Phaser.Group(this.game);
-            var hudTextStyle = { font: "24px Arial", fill: "#ffffff", align: "center" };
-            this._scoreText = this.game.add.text(0,0, "", hudTextStyle )
-            this._levelText = this.game.add.text(0,0, "", hudTextStyle )
-            this._livesText = this.game.add.text(0,0, "", hudTextStyle )
+            var fontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-"
+            this._scoreFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
+            this._scoreLabel = this.game.add.image(0,0,this._scoreFont);
+            this._levelFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
+            this._levelLabel = this.game.add.image(0,0,this._levelFont);
+            this._livesFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
+            this._livesLabel = this.game.add.image(0,0,this._livesFont);
             // healthbar
             this._healthBar = this.game.add.graphics(0,0);
             this._updateHealthBar();
 
-            this._hud.add(this._scoreText);
-            this._hud.add(this._levelText);
-            this._hud.add(this._livesText);
+            this._hud.add(this._scoreLabel);
+            this._hud.add(this._levelLabel);
+            this._hud.add(this._livesLabel);
             this._hud.add(this._healthBar);
 
 			// setup input
@@ -142,18 +150,17 @@ namespace Asteroids {
             // draw red
             this._healthBar.beginFill(0xff0000);
             this._healthBar.drawRect(healthEnd, 0, Global.HEALTHBAR_WIDTH-healthEnd, Global.HEALTHBAR_HEIGHT);
-            //this._healthBar.drawRect(healthEnd, 0, healthEnd+10, Global.HEALTHBAR_HEIGHT);
             this._healthBar.endFill();
         }
         
 		public render() {
 			this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, 80, "#ffffff");
-			this.game.debug.text("Score:" + Global._score, 100, 80, "#ffffff");
-			this.game.debug.text("Health:" + this._spaceship.health, 200, 80, "#ffffff");
-			this.game.debug.text("Lives:" + Global._lives, 300, 80, "#ffffff");
-			this.game.debug.text("Level:" + Global._level, 400, 80, "#ffffff");
-			this.game.debug.text("Left:" + this._asteroidCount, 500, 80, "#ffffff");
-            //this._weapon.debug();
+			// this.game.debug.text("Score:" + Global._score, 100, 80, "#ffffff");
+			// this.game.debug.text("Health:" + this._spaceship.health, 200, 80, "#ffffff");
+			// this.game.debug.text("Lives:" + Global._lives, 300, 80, "#ffffff");
+			// this.game.debug.text("Level:" + Global._level, 400, 80, "#ffffff");
+			// this.game.debug.text("Left:" + this._asteroidCount, 500, 80, "#ffffff");
+            // this._weapon.debug();
   		}
 
         private _startNewGame = () => {
@@ -165,15 +172,16 @@ namespace Asteroids {
             this._increaseScore(0); // init score label
             this._resetPlayer(Global.MAX_HEALTH);
             this._updateHealthBar();
+            this._updateLivesText();
             this._startLevel();
         }
 
         private _startLevel = () => {
             this._setStatus("Starting level " + Global._level);
             this._state = Play.LEVEL_START;
-            this._levelText.setText("Level:"+ Global._level);
-            this._levelText.y = Global.HUD_Y;
-            this._levelText.x = Global.HUD_BORDER;
+            this._levelFont.setText("Level:"+ Global._level);
+            this._levelLabel.y = Global.HUD_Y;
+            this._levelLabel.x = Global.HUD_BORDER;
             this._asteroidCount = Global._level * Global.ASTEROID_MULTIPLIER;
             this._initAsteroids(this._asteroidCount);
             //  Wait 2 seconds then start level
@@ -232,6 +240,7 @@ namespace Asteroids {
         private _playerDied = () => {
             this._state = Play.PLAYER_DIED;
             Global._lives--;
+            this._updateLivesText();
             if (Global._lives < 1) {
                 this._gameOver();
                 return;
@@ -283,11 +292,17 @@ namespace Asteroids {
             this._createExplosionAt(bullet.x,bullet.y);
         }
 
+        private _updateLivesText = () => {
+            this._livesFont.setText("Lives:"+ Global._lives);
+            this._livesLabel.y = Global.HUD_Y;
+            this._livesLabel.x = this.game.width - this._livesLabel.width - Global.HUD_BORDER;
+        }
+
         private _increaseScore = (inc: number) => {
             Global._score += inc;
-            this._scoreText.setText("Score:"+ Global._score);
-            this._scoreText.y = Global.HUD_Y;
-            this._scoreText.x = this.game.width - this._scoreText.width - Global.HUD_BORDER;
+            this._scoreFont.setText("Score:"+ Global._score);
+            this._scoreLabel.y = Global.HUD_Y;
+            this._scoreLabel.x = this.game.width/2 - this._scoreLabel.width/2;
         }
 
         private _createExplosionAt = (x: number, y:number) => {
