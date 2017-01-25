@@ -3,7 +3,9 @@ namespace Asteroids {
     export class GameOver extends Phaser.State {
 
         private _background: Phaser.Sprite;
-        private _gameOverText: Phaser.Text;
+           // text
+        private _gameOverFont: Phaser.RetroFont;
+        private _gameOverLabel: Phaser.Image;
         // input
         private _continueKey: Phaser.Key;
 
@@ -14,10 +16,14 @@ namespace Asteroids {
 			this._background.anchor.setTo( 0.5, 0.5 );
 
             // text 
-            var textStyle = { font: "72px Arial", fill: "#ff0000", align: "center" };
-            this._gameOverText = this.game.add.text(50,50, "Game Over", textStyle )
-            this._gameOverText.x = this.game.width/2 - this._gameOverText.width/2;
-            this._gameOverText.y = this.game.height/2 - this._gameOverText.height/2; 
+            var fontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-"
+            this._gameOverFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
+            this._gameOverLabel = this.game.add.image(0,0,this._gameOverFont);            
+            this._gameOverFont.setText("Press SPACE to start")
+            this._gameOverLabel.x = this.game.width/2 - this._gameOverLabel.width/2;
+            this._gameOverLabel.y = this.game.height/2 - this._gameOverLabel.height/2; 
+  
+            // input
             this._continueKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 
         }

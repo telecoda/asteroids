@@ -167,10 +167,13 @@ var Asteroids;
             this._background = this.game.add.sprite(this.game.world.centerX, this.game.world.centerY, 'stars');
             this._background.anchor.setTo(0.5, 0.5);
             // text 
-            var textStyle = { font: "72px Arial", fill: "#ff0000", align: "center" };
-            this._gameOverText = this.game.add.text(50, 50, "Game Over", textStyle);
-            this._gameOverText.x = this.game.width / 2 - this._gameOverText.width / 2;
-            this._gameOverText.y = this.game.height / 2 - this._gameOverText.height / 2;
+            var fontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-";
+            this._gameOverFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
+            this._gameOverLabel = this.game.add.image(0, 0, this._gameOverFont);
+            this._gameOverFont.setText("Press SPACE to start");
+            this._gameOverLabel.x = this.game.width / 2 - this._gameOverLabel.width / 2;
+            this._gameOverLabel.y = this.game.height / 2 - this._gameOverLabel.height / 2;
+            // input
             this._continueKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
         };
         // -------------------------------------------------------------------------
@@ -200,11 +203,45 @@ var Asteroids;
             // init background
             this._background = this.game.add.sprite(this.game.world.centerX, this.game.world.centerY, 'stars');
             this._background.anchor.setTo(0.5, 0.5);
-            // text 
-            var textStyle = { font: "72px Arial", fill: "#ffffff", align: "center" };
-            this._startText = this.game.add.text(50, 50, "Press SPACE to start", textStyle);
-            this._startText.x = this.game.width / 2 - this._startText.width / 2;
-            this._startText.y = this.game.height / 2 - this._startText.height / 2;
+            this._background.alpha = 0.5;
+            // title text 
+            var titleFontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789?!().,' ";
+            this._titleFont = this.game.add.retroFont('260-font', 48, 50, titleFontStr, 6, 0, 0);
+            this._titleLabel = this.game.add.image(0, 0, this._titleFont);
+            this._titleFont.setText("ASTEROIDS", true, 0, 0);
+            this._titleLabel.x = this.game.width / 2 - this._titleLabel.width / 2;
+            this._titleLabel.y = 50;
+            // instructions
+            var instFontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ/?!()-.,'\"0123456789";
+            this._instFont = this.game.add.retroFont('16x16-font', 16, 16, instFontStr, 20, 0, 0);
+            this._instLabel = this.game.add.image(0, 0, this._instFont);
+            var instructions = "Welcome to Asteroids.\n\n";
+            instructions += "The object of the game is to destroy all the asteroids\n";
+            instructions += "Without sustaining too much damage to your ship\n\n";
+            instructions += "Controls:\n\n";
+            instructions += "<LEFT> - Rotate ship left\n\n";
+            instructions += "<RIGHT> - Rotate ship right\n\n";
+            instructions += "<UP> - Thruster\n";
+            instructions += "<SPACE> - Fire\n";
+            this._instFont.setText(instructions, true, 0, 0, Phaser.RetroFont.ALIGN_CENTER);
+            this._instLabel.x = this.game.width / 2 - this._instLabel.width / 2;
+            this._instLabel.y = 200;
+            // start text 
+            var startFontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-";
+            this._startFont = this.game.add.retroFont('chrome-font', 31, 31, startFontStr, 10, 1, 1);
+            this._startLabel = this.game.add.image(0, 0, this._startFont);
+            this._startFont.setText("Press SPACE to start");
+            this._startLabel.x = this.game.width / 2 - this._startLabel.width / 2;
+            this._startLabel.y = this.game.height / 2 - this._startLabel.height / 2 + 150;
+            // credits
+            this._creditsFont = this.game.add.retroFont('16x16-font', 16, 16, instFontStr, 20, 0, 0);
+            this._creditsLabel = this.game.add.image(0, 0, this._creditsFont);
+            var credits = "Written by telecoda (c) 2017";
+            this._creditsFont.setText(credits, true, 0, 0, Phaser.RetroFont.ALIGN_CENTER);
+            this._creditsLabel.x = this.game.width / 2 - this._creditsLabel.width / 2;
+            this._creditsLabel.y = this.game.height - 50;
+            this._creditsLabel.tint = 0xff0000;
+            // input
             this._startKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
         };
         // -------------------------------------------------------------------------
@@ -320,13 +357,13 @@ var Asteroids;
                 _this.game.paused = !_this.game.paused;
             };
             _this._setStatus = function (text) {
-                _this._statusText.setText(text);
-                _this._statusText.x = _this.game.width / 2 - _this._statusText.width / 2;
-                _this._statusText.y = _this.game.height / 2 - _this._statusText.height / 2;
-                _this._statusText.visible = true;
+                _this._statusFont.setText(text);
+                _this._statusLabel.x = _this.game.width / 2 - _this._statusLabel.width / 2;
+                _this._statusLabel.y = _this.game.height / 2 - _this._statusLabel.height / 2;
+                _this._statusLabel.visible = true;
             };
             _this._hideStatus = function () {
-                _this._statusText.visible = false;
+                _this._statusLabel.visible = false;
             };
             _this._initAsteroids = function (count) {
                 _this._asteroids = new Phaser.Group(_this.game);
@@ -401,9 +438,6 @@ var Asteroids;
             this._weapon.bulletSpeed = Asteroids.Global.BULLET_SPEED;
             this._weapon.fireRate = Asteroids.Global.FIRE_RATE;
             this._weapon.trackSprite(this._spaceship, 0, 0, true);
-            // text overlays
-            var statusTextStyle = { font: "72px Arial", fill: "#ffffff", align: "center" };
-            this._statusText = this.game.add.text(0, 0, "", statusTextStyle);
             // hud 
             this._hud = new Phaser.Group(this.game);
             var fontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-";
@@ -413,6 +447,8 @@ var Asteroids;
             this._levelLabel = this.game.add.image(0, 0, this._levelFont);
             this._livesFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
             this._livesLabel = this.game.add.image(0, 0, this._livesFont);
+            this._statusFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
+            this._statusLabel = this.game.add.image(0, 0, this._statusFont);
             // healthbar
             this._healthBar = this.game.add.graphics(0, 0);
             this._updateHealthBar();
@@ -538,6 +574,8 @@ var Asteroids;
             this.load.image("bullet", "assets/bullet.png");
             this.load.spritesheet("explosion", "assets/explosion_spritesheet.png", 128, 128, 70);
             this.game.load.image('chrome-font', 'assets/fonts/ST_ADM.GIF');
+            this.game.load.image('16x16-font', 'assets/fonts/16x16-cool-metal.png');
+            this.game.load.image('260-font', 'assets/fonts/260.png');
         };
         // -------------------------------------------------------------------------
         Preload.prototype.create = function () {

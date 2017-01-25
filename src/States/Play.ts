@@ -19,10 +19,11 @@ namespace Asteroids {
         private _bullets: Phaser.Sprite[] = [];
         private _healthBar: Phaser.Graphics;
         // text
-        private _statusText: Phaser.Text;
+        private _statusFont: Phaser.RetroFont;
         private _levelFont: Phaser.RetroFont;
         private _scoreFont: Phaser.RetroFont;
         private _livesFont: Phaser.RetroFont;
+        private _statusLabel: Phaser.Image;
         private _levelLabel: Phaser.Image;
         private _scoreLabel: Phaser.Image;
         private _livesLabel: Phaser.Image;
@@ -69,9 +70,6 @@ namespace Asteroids {
             this._weapon.fireRate = Global.FIRE_RATE;
             this._weapon.trackSprite(this._spaceship, 0, 0, true);
 
-            // text overlays
-            var statusTextStyle = { font: "72px Arial", fill: "#ffffff", align: "center" };
-            this._statusText = this.game.add.text(0,0, "", statusTextStyle )
             // hud 
             this._hud = new Phaser.Group(this.game);
             var fontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-"
@@ -81,6 +79,8 @@ namespace Asteroids {
             this._levelLabel = this.game.add.image(0,0,this._levelFont);
             this._livesFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
             this._livesLabel = this.game.add.image(0,0,this._livesFont);
+            this._statusFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
+            this._statusLabel = this.game.add.image(0,0,this._statusFont);
             // healthbar
             this._healthBar = this.game.add.graphics(0,0);
             this._updateHealthBar();
@@ -254,14 +254,14 @@ namespace Asteroids {
         }
 
         private _setStatus = (text: string) => {
-            this._statusText.setText(text);
-            this._statusText.x = this.game.width/2 - this._statusText.width/2;
-            this._statusText.y = this.game.height/2 - this._statusText.height/2; 
-            this._statusText.visible = true;
+            this._statusFont.setText(text);
+            this._statusLabel.x = this.game.width/2 - this._statusLabel.width/2;
+            this._statusLabel.y = this.game.height/2 - this._statusLabel.height/2; 
+            this._statusLabel.visible = true;
         } 
 
         private _hideStatus = () => {
-            this._statusText.visible = false;
+            this._statusLabel.visible = false;
         }
 
         private _initAsteroids = (count: number) => {

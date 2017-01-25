@@ -13,7 +13,8 @@ namespace Asteroids {
             this.load.image("bullet", "assets/bullet.png")
             this.load.spritesheet("explosion", "assets/explosion_spritesheet.png",128,128,70)
             this.game.load.image('chrome-font', 'assets/fonts/ST_ADM.GIF');
-
+            this.game.load.image('16x16-font', 'assets/fonts/16x16-cool-metal.png');
+            this.game.load.image('260-font', 'assets/fonts/260.png');
         }
 
         // -------------------------------------------------------------------------
