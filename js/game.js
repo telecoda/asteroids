@@ -33,6 +33,8 @@ var Asteroids;
     Global.BULLET_SPEED = 300;
     Global.FIRE_RATE = 100;
     Global.MAX_BULLETS = 30;
+    // particles
+    Global.MAX_PARTICLES = 1000;
     Asteroids.Global = Global;
 })(Asteroids || (Asteroids = {}));
 // -------------------------------------------------------------------------
@@ -262,6 +264,11 @@ var Asteroids;
             var _this = _super.apply(this, arguments) || this;
             _this._asteroidCount = 0;
             _this._bullets = [];
+            _this._startThruster = function () {
+                _this._thruster.start(true, 500, null, 1);
+                //this.game.add.tween(this._thruster).to( { emitX: 800-64 }, 1000, Phaser.Easing.Sinusoidal.InOut, true, 0, Number.MAX_VALUE, true);
+                //this.game.add.tween(this._thruster).to( { emitY: 200 }, 4000, Phaser.Easing.Sinusoidal.InOut, true, 0, Number.MAX_VALUE, true);
+            };
             _this._updateHealthBar = function () {
                 _this._healthBar.x = _this.game.width / 2 - Asteroids.Global.HEALTHBAR_WIDTH / 2;
                 _this._healthBar.y = _this.game.height - Asteroids.Global.HEALTHBAR_HEIGHT - Asteroids.Global.HUD_BORDER;
@@ -275,6 +282,10 @@ var Asteroids;
                 _this._healthBar.beginFill(0xff0000);
                 _this._healthBar.drawRect(healthEnd, 0, Asteroids.Global.HEALTHBAR_WIDTH - healthEnd, Asteroids.Global.HEALTHBAR_HEIGHT);
                 _this._healthBar.endFill();
+            };
+            _this._updateThruster = function () {
+                _this._thruster.emitX = _this._spaceship.x;
+                _this._thruster.emitY = _this._spaceship.y;
             };
             _this._startNewGame = function () {
                 _this._setStatus("Start level 1");
@@ -414,6 +425,11 @@ var Asteroids;
             };
             _this._spaceshipHitAsteroid = function (spaceship, asteroid) {
                 spaceship.health -= Asteroids.Global.ASTEROID_DAMAGE;
+                // change colour briefly
+                if (spaceship.health > 0) {
+                    spaceship.loadTexture("spaceship-hit");
+                    _this.game.time.events.add(Phaser.Timer.SECOND * 0.1, _this._resetShipTexture.bind(_this));
+                }
             };
             return _this;
         }
@@ -426,11 +442,22 @@ var Asteroids;
             // init background
             this._background = this.game.add.sprite(this.game.world.centerX, this.game.world.centerY, 'stars');
             this._background.anchor.setTo(0.5, 0.5);
+            // particles
+            this._thruster = this.game.add.emitter(0, 0, Asteroids.Global.MAX_PARTICLES);
+            this._thruster.makeParticles("thruster");
+            this._thruster.setXSpeed(0, 0);
+            this._thruster.setYSpeed(0, 0);
+            this._thruster.setRotation(0, 0);
+            this._thruster.setAlpha(0.1, 1, 3000);
+            this._thruster.setScale(1, 0.0, 1, 0.0, 3000, Phaser.Easing.Quintic.Out);
+            this._thruster.gravity = 0;
             // init spaceship
             this._spaceship = this.game.add.sprite(this.game.world.centerX, this.game.world.centerY, 'spaceship');
             this._spaceship.anchor.setTo(0.5, 0.5);
             this._spaceship.angle = 0;
             this._spaceship.scale = new Phaser.Point(0.5, 0.5);
+            this._thruster.emitX = this._spaceship.x;
+            this._thruster.emitY = this._spaceship.y;
             //  and its physics settings
             this.game.physics.enable(this._spaceship, Phaser.Physics.ARCADE);
             this._weapon = this.game.add.weapon(Asteroids.Global.MAX_BULLETS, 'bullet');
@@ -456,6 +483,8 @@ var Asteroids;
             this._hud.add(this._levelLabel);
             this._hud.add(this._livesLabel);
             this._hud.add(this._healthBar);
+            // animations
+            this._explosions = new Phaser.Group(this.game);
             // setup input
             this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
             this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
@@ -463,8 +492,6 @@ var Asteroids;
             this._fireKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
             this._pauseKey = this.game.input.keyboard.addKey(Phaser.Keyboard.P);
             this._pauseKey.onDown.add(this._pauseToggle, this);
-            // animations
-            this._explosions = new Phaser.Group(this.game);
             this._startNewGame();
         };
         // -------------------------------------------------------------------------
@@ -490,6 +517,7 @@ var Asteroids;
                     // update health display
                     // health remaining
                     this._updateHealthBar();
+                    this._updateThruster();
                     break;
                 }
             }
@@ -503,8 +531,13 @@ var Asteroids;
             // this.game.debug.text("Left:" + this._asteroidCount, 500, 80, "#ffffff");
             // this._weapon.debug();
         };
+        Play.prototype._resetShipTexture = function () {
+            console.log("here");
+            this._spaceship.loadTexture("spaceship");
+        };
         Play.prototype._handleInput = function () {
             if (this._thrustKey.isDown) {
+                this._startThruster();
                 this.game.physics.arcade.accelerationFromRotation(this._spaceship.rotation, 200, this._spaceship.body.acceleration);
             }
             else {
@@ -571,8 +604,10 @@ var Asteroids;
             this.load.image("stars", "assets/stars.png");
             this.load.image("asteroid-01", "assets/asteroid-01.png");
             this.load.image("spaceship", "assets/spaceship.png");
+            this.load.image("spaceship-hit", "assets/spaceship-hit.png");
             this.load.image("bullet", "assets/bullet.png");
             this.load.spritesheet("explosion", "assets/explosion_spritesheet.png", 128, 128, 70);
+            this.load.image("thruster", "assets/particles/red.png");
             this.game.load.image('chrome-font', 'assets/fonts/ST_ADM.GIF');
             this.game.load.image('16x16-font', 'assets/fonts/16x16-cool-metal.png');
             this.game.load.image('260-font', 'assets/fonts/260.png');

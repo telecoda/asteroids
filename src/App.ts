@@ -28,6 +28,8 @@ namespace Asteroids {
         static BULLET_SPEED : number = 300;
         static FIRE_RATE : number = 100;
         static MAX_BULLETS: number = 30
+        // particles
+        static MAX_PARTICLES: number = 1000;
 
         // share game variables
         static _lives : number;

@@ -30,8 +30,9 @@ namespace Asteroids {
 
         // animations
         private _explosion: Phaser.Animation;
-
-
+        // particles
+        private _thruster: Phaser.Particles.Arcade.Emitter;
+  
         // state
         private _state: number;
 
@@ -54,11 +55,23 @@ namespace Asteroids {
             // init background
 			this._background = this.game.add.sprite( this.game.world.centerX, this.game.world.centerY, 'stars' );
 			this._background.anchor.setTo( 0.5, 0.5 );
-			// init spaceship
+	        // particles
+            this._thruster = this.game.add.emitter(0,0,Global.MAX_PARTICLES);
+            this._thruster.makeParticles("thruster");
+            this._thruster.setXSpeed(0,0);
+            this._thruster.setYSpeed(0,0);
+            this._thruster.setRotation(0,0);
+            this._thruster.setAlpha(0.1,1,3000);
+            this._thruster.setScale(1,0.0,1,0.0,3000,Phaser.Easing.Quintic.Out);                
+            this._thruster.gravity = 0;
+    
+    		// init spaceship
 			this._spaceship = this.game.add.sprite( this.game.world.centerX, this.game.world.centerY, 'spaceship' );
 			this._spaceship.anchor.setTo( 0.5, 0.5 );
             this._spaceship.angle = 0;
             this._spaceship.scale = new Phaser.Point(0.5,0.5);
+            this._thruster.emitX = this._spaceship.x;
+            this._thruster.emitY = this._spaceship.y;
  
 		    //  and its physics settings
             this.game.physics.enable(this._spaceship, Phaser.Physics.ARCADE);
@@ -90,6 +103,10 @@ namespace Asteroids {
             this._hud.add(this._livesLabel);
             this._hud.add(this._healthBar);
 
+            // animations
+            this._explosions = new Phaser.Group(this.game);
+      
+    
 			// setup input
 			this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
 			this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
@@ -99,8 +116,6 @@ namespace Asteroids {
 
             this._pauseKey.onDown.add(this._pauseToggle, this);
 
-            // animations
-            this._explosions = new Phaser.Group(this.game);
             
             this._startNewGame();
 
@@ -131,11 +146,20 @@ namespace Asteroids {
                     this.game.physics.arcade.overlap(this._spaceship, this._asteroids, this._spaceshipHitAsteroid, null, this);
                     // update health display
                     // health remaining
-                    this._updateHealthBar();    
+                    this._updateHealthBar();
+                    this._updateThruster();  
                     break;
                 }
             }
         }
+
+        private _startThruster = () => {
+            this._thruster.start(true,500,null,1);
+            
+            //this.game.add.tween(this._thruster).to( { emitX: 800-64 }, 1000, Phaser.Easing.Sinusoidal.InOut, true, 0, Number.MAX_VALUE, true);
+            //this.game.add.tween(this._thruster).to( { emitY: 200 }, 4000, Phaser.Easing.Sinusoidal.InOut, true, 0, Number.MAX_VALUE, true);
+        }
+
 
         private _updateHealthBar = () => {
             this._healthBar.x = this.game.width/2 - Global.HEALTHBAR_WIDTH/2; 
@@ -153,6 +177,11 @@ namespace Asteroids {
             this._healthBar.endFill();
         }
         
+        private _updateThruster = () => {
+            this._thruster.emitX = this._spaceship.x;
+            this._thruster.emitY = this._spaceship.y;
+        }
+
 		public render() {
 			this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, 80, "#ffffff");
 			// this.game.debug.text("Score:" + Global._score, 100, 80, "#ffffff");
@@ -318,15 +347,24 @@ namespace Asteroids {
 
         private _spaceshipHitAsteroid = (spaceship: Phaser.Sprite,asteroid: Asteroids.Asteroid ) => {
             spaceship.health -= Global.ASTEROID_DAMAGE;
+            // change colour briefly
+            if (spaceship.health > 0) {
+                spaceship.loadTexture("spaceship-hit");
+                this.game.time.events.add(Phaser.Timer.SECOND * 0.1,this._resetShipTexture.bind(this));
+            }
+
         }
 
+        private _resetShipTexture () {
+            this._spaceship.loadTexture("spaceship");
+        }
 
         private _handleInput() {
 
             if (this._thrustKey.isDown) {
+                this._startThruster();
                 this.game.physics.arcade.accelerationFromRotation(this._spaceship.rotation, 200, this._spaceship.body.acceleration);
-            }
-            else {
+            } else {
                 this._spaceship.body.acceleration.set(0);
             }
 
