@@ -4,6 +4,8 @@ This is a simple asteroids game written with [phaser.io](https://phaser.io) in [
 
 Nothing special, just to learn how phaser.io works.
 
+## Play
+Play the game -> [here](https://telecoda.github.io/asteroids/)
 ## Running to code
 launch site locally:
 
