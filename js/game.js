@@ -35,6 +35,8 @@ var Asteroids;
     Global.MAX_BULLETS = 30;
     // particles
     Global.MAX_PARTICLES = 1000;
+    // high score table
+    Global.TOTAL_SCORES = 10;
     Asteroids.Global = Global;
 })(Asteroids || (Asteroids = {}));
 // -------------------------------------------------------------------------
@@ -56,6 +58,7 @@ var Asteroids;
             _this.state.add("Menu", Asteroids.Menu);
             _this.state.add("Play", Asteroids.Play);
             _this.state.add("GameOver", Asteroids.GameOver);
+            _this.state.add("HighScores", Asteroids.HighScores);
             // start
             _this.state.start("Boot");
             return _this;
@@ -143,6 +146,29 @@ var Asteroids;
 })(Asteroids || (Asteroids = {}));
 var Asteroids;
 (function (Asteroids) {
+    var HighScore = (function () {
+        // -------------------------------------------------------------------------
+        function HighScore(name, score, level) {
+            var _this = this;
+            this.getName = function () {
+                return _this._name;
+            };
+            this.getScore = function () {
+                return _this._score;
+            };
+            this.getLevel = function () {
+                return _this._level;
+            };
+            this._name = name;
+            this._score = score;
+            this._level = level;
+        }
+        return HighScore;
+    }());
+    Asteroids.HighScore = HighScore;
+})(Asteroids || (Asteroids = {}));
+var Asteroids;
+(function (Asteroids) {
     var Boot = (function (_super) {
         __extends(Boot, _super);
         function Boot() {
@@ -150,6 +176,16 @@ var Asteroids;
         }
         // -------------------------------------------------------------------------
         Boot.prototype.create = function () {
+            // init high score table
+            Asteroids.Global._highscores = new Array();
+            for (var i = 0; i < Asteroids.Global.TOTAL_SCORES; i++) {
+                var score = new Asteroids.HighScore("name" + i, i * 1000, i);
+                Asteroids.Global._highscores.push(score);
+            }
+            // Sort scores into order
+            Asteroids.Global._highscores = Asteroids.Global._highscores.sort(Asteroids.sortScores);
+            // TEMP: test highscores
+            Asteroids.Global._score = 5000;
             this.game.state.start("Preload");
         };
         return Boot;
@@ -172,7 +208,7 @@ var Asteroids;
             var fontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-";
             this._gameOverFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
             this._gameOverLabel = this.game.add.image(0, 0, this._gameOverFont);
-            this._gameOverFont.setText("Press SPACE to start");
+            this._gameOverFont.setText("GAME OVER");
             this._gameOverLabel.x = this.game.width / 2 - this._gameOverLabel.width / 2;
             this._gameOverLabel.y = this.game.height / 2 - this._gameOverLabel.height / 2;
             // input
@@ -181,13 +217,10 @@ var Asteroids;
         // -------------------------------------------------------------------------
         GameOver.prototype.update = function () {
             if (this._continueKey.isDown) {
-                this.game.state.start("Menu");
+                this.game.state.start("HighScores");
             }
         };
         GameOver.prototype.render = function () {
-            this.game.debug.text("Score:" + Asteroids.Global._score, 100, 14, "#ffffff");
-            this.game.debug.text("Lives:" + Asteroids.Global._lives, 300, 14, "#ffffff");
-            this.game.debug.text("Level:" + Asteroids.Global._level, 400, 14, "#ffffff");
         };
         return GameOver;
     }(Phaser.State));
@@ -195,10 +228,122 @@ var Asteroids;
 })(Asteroids || (Asteroids = {}));
 var Asteroids;
 (function (Asteroids) {
+    var HighScores = (function (_super) {
+        __extends(HighScores, _super);
+        function HighScores() {
+            var _this = _super.apply(this, arguments) || this;
+            // your got a high score!
+            _this._newHighScore = function () {
+                // text 
+                var fontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-";
+                _this._newHighScoreFont = _this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
+                _this._newHighScoresLabel = _this.game.add.image(0, 0, _this._newHighScoreFont);
+                var newHighScore = "New high score!";
+                _this._newHighScoreFont.setText(newHighScore, true, 0, 0, Phaser.RetroFont.ALIGN_CENTER);
+                _this._newHighScoresLabel.x = _this.game.width / 2 - _this._newHighScoresLabel.width / 2;
+                _this._newHighScoresLabel.y = _this.game.height / 2 - _this._newHighScoresLabel.height / 2 + 100;
+            };
+            _this._showMenu = function () {
+                // only go to menu if game is still on high scores
+                if (_this.game.state.getCurrentState().key == "HighScores") {
+                    _this.game.state.start("Menu");
+                }
+            };
+            return _this;
+        }
+        // -------------------------------------------------------------------------
+        HighScores.prototype.create = function () {
+            // init background
+            this._background = this.game.add.sprite(this.game.world.centerX, this.game.world.centerY, 'stars');
+            this._background.anchor.setTo(0.5, 0.5);
+            this._background.alpha = 0.5;
+            // title text 
+            var titleFontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789?!().,' ";
+            this._titleFont = this.game.add.retroFont('260-font', 48, 50, titleFontStr, 6, 0, 0);
+            this._titleLabel = this.game.add.image(0, 0, this._titleFont);
+            this._titleFont.setText("HIGH SCORES", true, 0, 0);
+            this._titleLabel.x = this.game.width / 2 - this._titleLabel.width / 2;
+            this._titleLabel.y = 50;
+            // Sort scores into order
+            Asteroids.Global._highscores = Asteroids.Global._highscores.sort(sortScores);
+            // check if current score fits in highscore table
+            if (Asteroids.Global._score > Asteroids.Global._highscores[Asteroids.Global.TOTAL_SCORES - 1].getScore()) {
+                this._newHighScore();
+                return;
+            }
+            // text 
+            var fontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-";
+            this._highScoresFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
+            this._highScoresLabel = this.game.add.image(0, 0, this._highScoresFont);
+            // convert list of scores to string to display
+            var highScoreStr = "  Name        Level   Score   \n";
+            highScoreStr += "------------------------------\n";
+            for (var i = 0; i < Asteroids.Global._highscores.length; i++) {
+                var name_1 = padRight(Asteroids.Global._highscores[i].getName(), 10);
+                var level = padLeft(Asteroids.Global._highscores[i].getLevel().toString(), 5);
+                var score = padLeft(Asteroids.Global._highscores[i].getScore().toString(), 10);
+                var scoreStr = " " + name_1 + " " + level + " " + score + " \n\n";
+                highScoreStr += scoreStr;
+            }
+            this._highScoresFont.setText(highScoreStr, true, 0, 0, Phaser.RetroFont.ALIGN_CENTER);
+            this._highScoresLabel.x = this.game.width / 2 - this._highScoresLabel.width / 2;
+            this._highScoresLabel.y = this.game.height / 2 - this._highScoresLabel.height / 2 + 100;
+            // input
+            this._continueKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+            // timers
+            this.game.time.events.add(Phaser.Timer.SECOND * 5, this._showMenu, this);
+        };
+        // -------------------------------------------------------------------------
+        HighScores.prototype.update = function () {
+            if (this._continueKey.isDown) {
+                this.game.state.start("Menu");
+            }
+        };
+        return HighScores;
+    }(Phaser.State));
+    Asteroids.HighScores = HighScores;
+    function sortScores(s1, s2) {
+        return s2.getScore() - s1.getScore();
+    }
+    Asteroids.sortScores = sortScores;
+})(Asteroids || (Asteroids = {}));
+function padLeft(value, width) {
+    if (value.length < width) {
+        // pad string
+        for (var i = 0; value.length < width; i++) {
+            value = " " + value;
+        }
+        return value;
+    }
+    else {
+        return value.slice(0, width);
+    }
+}
+function padRight(value, width) {
+    if (value.length < width) {
+        // pad string
+        for (var i = 0; value.length < width; i++) {
+            value = value + " ";
+        }
+        return value;
+    }
+    else {
+        return value.slice(0, width);
+    }
+}
+var Asteroids;
+(function (Asteroids) {
     var Menu = (function (_super) {
         __extends(Menu, _super);
         function Menu() {
-            return _super.apply(this, arguments) || this;
+            var _this = _super.apply(this, arguments) || this;
+            _this._showHighScores = function () {
+                // only go to high scores if game is still on menu
+                if (_this.game.state.getCurrentState().key == "Menu") {
+                    _this.game.state.start("HighScores");
+                }
+            };
+            return _this;
         }
         // -------------------------------------------------------------------------
         Menu.prototype.create = function () {
@@ -245,6 +390,8 @@ var Asteroids;
             this._creditsLabel.tint = 0xff0000;
             // input
             this._startKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+            // timers
+            this.game.time.events.add(Phaser.Timer.SECOND * 5, this._showHighScores, this);
         };
         // -------------------------------------------------------------------------
         Menu.prototype.update = function () {
@@ -532,7 +679,6 @@ var Asteroids;
             // this._weapon.debug();
         };
         Play.prototype._resetShipTexture = function () {
-            console.log("here");
             this._spaceship.loadTexture("spaceship");
         };
         Play.prototype._handleInput = function () {

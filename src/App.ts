@@ -36,6 +36,10 @@ namespace Asteroids {
         static _level : number;
         static _score : number;
 
+        // high score table
+        static TOTAL_SCORES: number = 10;
+        static _highscores : Array<HighScore>;
+
     }
 }
 

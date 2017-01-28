@@ -19,7 +19,7 @@ namespace Asteroids {
             var fontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-"
             this._gameOverFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
             this._gameOverLabel = this.game.add.image(0,0,this._gameOverFont);            
-            this._gameOverFont.setText("Press SPACE to start")
+            this._gameOverFont.setText("GAME OVER")
             this._gameOverLabel.x = this.game.width/2 - this._gameOverLabel.width/2;
             this._gameOverLabel.y = this.game.height/2 - this._gameOverLabel.height/2; 
   
@@ -31,14 +31,11 @@ namespace Asteroids {
         // -------------------------------------------------------------------------
         public update() {
             if (this._continueKey.isDown) {
-                this.game.state.start("Menu");
+                this.game.state.start("HighScores");
             }
         }
 
         public render() {
-			this.game.debug.text("Score:" + Global._score, 100, 14, "#ffffff");
-			this.game.debug.text("Lives:" + Global._lives, 300, 14, "#ffffff");
-			this.game.debug.text("Level:" + Global._level, 400, 14, "#ffffff");
 		}
     }
 }
