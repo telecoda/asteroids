@@ -1,6 +1,6 @@
 #Asteroids
 
-This is a simple asteroids game written with [phaser.io](https://phaser.io) in [typescript](...)
+This is a simple asteroids game written with [phaser.io](https://phaser.io) in [typescript](http://www.typescriptlang.org/index.html)
 
 Nothing special, just to learn how phaser.io works.
 
