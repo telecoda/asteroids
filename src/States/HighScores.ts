@@ -38,32 +38,13 @@ namespace Asteroids {
             // check if current score fits in highscore table
             if (Global._score > Global._highscores[Global.TOTAL_SCORES-1].getScore()) {
                 this._newHighScore();
-                return
+            } else {
+                this._initTable();
             }
 
-            // text 
-            var fontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-"
-            this._highScoresFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
-            this._highScoresLabel = this.game.add.image(0,0,this._highScoresFont);            
-            // convert list of scores to string to display
-            let highScoreStr = "  Name        Level   Score   \n";
-            highScoreStr +=    "------------------------------\n";
-            for(let i=0; i<Global._highscores.length; i++) {
-                let name = padRight(Global._highscores[i].getName(),10);
-                let level = padLeft(Global._highscores[i].getLevel().toString(),5);
-                let score = padLeft(Global._highscores[i].getScore().toString(),10);
-                let scoreStr = ` ${name} ${level} ${score} \n\n`;
-                highScoreStr += scoreStr;
-            }
-            this._highScoresFont.setText(highScoreStr,true,0,0,Phaser.RetroFont.ALIGN_CENTER);
-            this._highScoresLabel.x = this.game.width/2 - this._highScoresLabel.width/2;
-            this._highScoresLabel.y = this.game.height/2 - this._highScoresLabel.height/2 + 100; 
-  
-            // input
+             // input
             this._continueKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-            // timers
-            this.game.time.events.add(Phaser.Timer.SECOND * 5, this._showMenu, this);
-
+  
         }
 
         // -------------------------------------------------------------------------
@@ -83,7 +64,30 @@ namespace Asteroids {
             this._newHighScoreFont.setText(newHighScore,true,0,0,Phaser.RetroFont.ALIGN_CENTER);
             this._newHighScoresLabel.x = this.game.width/2 - this._newHighScoresLabel.width/2;
             this._newHighScoresLabel.y = this.game.height/2 - this._newHighScoresLabel.height/2 + 100; 
+        }
+
+        private _initTable = () => {
+          // text 
+            var fontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-"
+            this._highScoresFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
+            this._highScoresLabel = this.game.add.image(0,0,this._highScoresFont);            
+            // convert list of scores to string to display
+            let highScoreStr = "  Name        Level   Score   \n";
+            highScoreStr +=    "------------------------------\n";
+            for(let i=0; i<Global._highscores.length; i++) {
+                let name = padRight(Global._highscores[i].getName(),10);
+                let level = padLeft(Global._highscores[i].getLevel().toString(),5);
+                let score = padLeft(Global._highscores[i].getScore().toString(),10);
+                let scoreStr = ` ${name} ${level} ${score} \n\n`;
+                highScoreStr += scoreStr;
+            }
+            this._highScoresFont.setText(highScoreStr,true,0,0,Phaser.RetroFont.ALIGN_CENTER);
+            this._highScoresLabel.x = this.game.width/2 - this._highScoresLabel.width/2;
+            this._highScoresLabel.y = this.game.height/2 - this._highScoresLabel.height/2 + 100; 
   
+           // timers
+            this.game.time.events.add(Phaser.Timer.SECOND * 5, this._showMenu, this);
+
         }
 
         private _showMenu = () => {

@@ -35,12 +35,12 @@ namespace Asteroids {
             this._instFont = this.game.add.retroFont('16x16-font', 16, 16, instFontStr, 20, 0, 0);
             this._instLabel = this.game.add.image(0,0,this._instFont);          
             let instructions = "Welcome to Asteroids.\n\n"
-            instructions += "The object of the game is to destroy all the asteroids\n"
-            instructions += "Without sustaining too much damage to your ship\n\n"
+            instructions += "The object of the game is to destroy all the asteroids\n\n"
+            instructions += "Without sustaining too much damage to your ship\n\n\n"
             instructions += "Controls:\n\n"
             instructions += "<LEFT> - Rotate ship left\n\n"
             instructions += "<RIGHT> - Rotate ship right\n\n"
-            instructions += "<UP> - Thruster\n"
+            instructions += "<UP> - Thruster\n\n"
             instructions += "<SPACE> - Fire\n"
             this._instFont.setText(instructions,true,0,0,Phaser.RetroFont.ALIGN_CENTER);
             this._instLabel.x = this.game.width/2 - this._instLabel.width/2;

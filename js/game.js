@@ -172,7 +172,7 @@ var Asteroids;
     var Boot = (function (_super) {
         __extends(Boot, _super);
         function Boot() {
-            return _super.apply(this, arguments) || this;
+            return _super !== null && _super.apply(this, arguments) || this;
         }
         // -------------------------------------------------------------------------
         Boot.prototype.create = function () {
@@ -185,7 +185,7 @@ var Asteroids;
             // Sort scores into order
             Asteroids.Global._highscores = Asteroids.Global._highscores.sort(Asteroids.sortScores);
             // TEMP: test highscores
-            Asteroids.Global._score = 5000;
+            //Global._score = 5000;
             this.game.state.start("Preload");
         };
         return Boot;
@@ -197,7 +197,7 @@ var Asteroids;
     var GameOver = (function (_super) {
         __extends(GameOver, _super);
         function GameOver() {
-            return _super.apply(this, arguments) || this;
+            return _super !== null && _super.apply(this, arguments) || this;
         }
         // -------------------------------------------------------------------------
         GameOver.prototype.create = function () {
@@ -231,7 +231,7 @@ var Asteroids;
     var HighScores = (function (_super) {
         __extends(HighScores, _super);
         function HighScores() {
-            var _this = _super.apply(this, arguments) || this;
+            var _this = _super !== null && _super.apply(this, arguments) || this;
             // your got a high score!
             _this._newHighScore = function () {
                 // text 
@@ -242,6 +242,27 @@ var Asteroids;
                 _this._newHighScoreFont.setText(newHighScore, true, 0, 0, Phaser.RetroFont.ALIGN_CENTER);
                 _this._newHighScoresLabel.x = _this.game.width / 2 - _this._newHighScoresLabel.width / 2;
                 _this._newHighScoresLabel.y = _this.game.height / 2 - _this._newHighScoresLabel.height / 2 + 100;
+            };
+            _this._initTable = function () {
+                // text 
+                var fontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-";
+                _this._highScoresFont = _this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
+                _this._highScoresLabel = _this.game.add.image(0, 0, _this._highScoresFont);
+                // convert list of scores to string to display
+                var highScoreStr = "  Name        Level   Score   \n";
+                highScoreStr += "------------------------------\n";
+                for (var i = 0; i < Asteroids.Global._highscores.length; i++) {
+                    var name_1 = padRight(Asteroids.Global._highscores[i].getName(), 10);
+                    var level = padLeft(Asteroids.Global._highscores[i].getLevel().toString(), 5);
+                    var score = padLeft(Asteroids.Global._highscores[i].getScore().toString(), 10);
+                    var scoreStr = " " + name_1 + " " + level + " " + score + " \n\n";
+                    highScoreStr += scoreStr;
+                }
+                _this._highScoresFont.setText(highScoreStr, true, 0, 0, Phaser.RetroFont.ALIGN_CENTER);
+                _this._highScoresLabel.x = _this.game.width / 2 - _this._highScoresLabel.width / 2;
+                _this._highScoresLabel.y = _this.game.height / 2 - _this._highScoresLabel.height / 2 + 100;
+                // timers
+                _this.game.time.events.add(Phaser.Timer.SECOND * 5, _this._showMenu, _this);
             };
             _this._showMenu = function () {
                 // only go to menu if game is still on high scores
@@ -269,29 +290,12 @@ var Asteroids;
             // check if current score fits in highscore table
             if (Asteroids.Global._score > Asteroids.Global._highscores[Asteroids.Global.TOTAL_SCORES - 1].getScore()) {
                 this._newHighScore();
-                return;
             }
-            // text 
-            var fontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-";
-            this._highScoresFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
-            this._highScoresLabel = this.game.add.image(0, 0, this._highScoresFont);
-            // convert list of scores to string to display
-            var highScoreStr = "  Name        Level   Score   \n";
-            highScoreStr += "------------------------------\n";
-            for (var i = 0; i < Asteroids.Global._highscores.length; i++) {
-                var name_1 = padRight(Asteroids.Global._highscores[i].getName(), 10);
-                var level = padLeft(Asteroids.Global._highscores[i].getLevel().toString(), 5);
-                var score = padLeft(Asteroids.Global._highscores[i].getScore().toString(), 10);
-                var scoreStr = " " + name_1 + " " + level + " " + score + " \n\n";
-                highScoreStr += scoreStr;
+            else {
+                this._initTable();
             }
-            this._highScoresFont.setText(highScoreStr, true, 0, 0, Phaser.RetroFont.ALIGN_CENTER);
-            this._highScoresLabel.x = this.game.width / 2 - this._highScoresLabel.width / 2;
-            this._highScoresLabel.y = this.game.height / 2 - this._highScoresLabel.height / 2 + 100;
             // input
             this._continueKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-            // timers
-            this.game.time.events.add(Phaser.Timer.SECOND * 5, this._showMenu, this);
         };
         // -------------------------------------------------------------------------
         HighScores.prototype.update = function () {
@@ -336,7 +340,7 @@ var Asteroids;
     var Menu = (function (_super) {
         __extends(Menu, _super);
         function Menu() {
-            var _this = _super.apply(this, arguments) || this;
+            var _this = _super !== null && _super.apply(this, arguments) || this;
             _this._showHighScores = function () {
                 // only go to high scores if game is still on menu
                 if (_this.game.state.getCurrentState().key == "Menu") {
@@ -363,12 +367,12 @@ var Asteroids;
             this._instFont = this.game.add.retroFont('16x16-font', 16, 16, instFontStr, 20, 0, 0);
             this._instLabel = this.game.add.image(0, 0, this._instFont);
             var instructions = "Welcome to Asteroids.\n\n";
-            instructions += "The object of the game is to destroy all the asteroids\n";
-            instructions += "Without sustaining too much damage to your ship\n\n";
+            instructions += "The object of the game is to destroy all the asteroids\n\n";
+            instructions += "Without sustaining too much damage to your ship\n\n\n";
             instructions += "Controls:\n\n";
             instructions += "<LEFT> - Rotate ship left\n\n";
             instructions += "<RIGHT> - Rotate ship right\n\n";
-            instructions += "<UP> - Thruster\n";
+            instructions += "<UP> - Thruster\n\n";
             instructions += "<SPACE> - Fire\n";
             this._instFont.setText(instructions, true, 0, 0, Phaser.RetroFont.ALIGN_CENTER);
             this._instLabel.x = this.game.width / 2 - this._instLabel.width / 2;
@@ -408,7 +412,7 @@ var Asteroids;
     var Play = (function (_super) {
         __extends(Play, _super);
         function Play() {
-            var _this = _super.apply(this, arguments) || this;
+            var _this = _super !== null && _super.apply(this, arguments) || this;
             _this._asteroidCount = 0;
             _this._bullets = [];
             _this._startThruster = function () {
@@ -740,7 +744,7 @@ var Asteroids;
     var Preload = (function (_super) {
         __extends(Preload, _super);
         function Preload() {
-            var _this = _super.apply(this, arguments) || this;
+            var _this = _super !== null && _super.apply(this, arguments) || this;
             // music decoded, ready for game
             _this._ready = false;
             return _this;
