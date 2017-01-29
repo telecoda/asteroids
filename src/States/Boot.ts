@@ -15,8 +15,9 @@ namespace Asteroids {
             // Sort scores into order
             Global._highscores = Global._highscores.sort(sortScores);
 
-            // TEMP: test highscores
-            //Global._score = 5000;
+            
+            Global._score = 0;
+            Global._level = 0;
             this.game.state.start("Preload");
 
         }

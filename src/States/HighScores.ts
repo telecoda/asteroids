@@ -13,8 +13,22 @@ namespace Asteroids {
         private _newHighScoreFont: Phaser.RetroFont;
         private _newHighScoresLabel: Phaser.Image;
 
+        private _newNameFont: Phaser.RetroFont;
+        private _newNameLabel: Phaser.Image;
+        private _newLetterFont: Phaser.RetroFont;
+        private _newLetterLabel: Phaser.Image;
+
+        private _fontStr: string;
+        private _newName: string;
+        private _newLetter: string;
+        private _newLetterIndex: number;
         // input
-        private _continueKey: Phaser.Key;
+        private _leftKey: Phaser.Key;
+        private _rightKey: Phaser.Key;
+        private _fireKey: Phaser.Key;
+
+        // state
+        private _enteringName: boolean = false;
 
         // -------------------------------------------------------------------------
         public create() {
@@ -31,39 +45,128 @@ namespace Asteroids {
             this._titleLabel.x = this.game.width/2 - this._titleLabel.width/2;
             this._titleLabel.y = 50;
 
+            // input
+  			this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
+			this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
+            this._fireKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+  
 
             // Sort scores into order
             Global._highscores = Global._highscores.sort(sortScores);
 
             // check if current score fits in highscore table
             if (Global._score > Global._highscores[Global.TOTAL_SCORES-1].getScore()) {
+                this._enteringName = true;
+                this._leftKey.onDown.add(this._letterBack, this);
+                this._rightKey.onDown.add(this._letterForward, this);
+                this._fireKey.onDown.add(this._letterSelected, this);
                 this._newHighScore();
             } else {
+                this._enteringName = false;
+                this._fireKey.onDown.add(this._gotoMenu, this);
                 this._initTable();
             }
 
-             // input
-            this._continueKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-  
+          
+        }
+
+        private _gotoMenu = () => {
+             this.game.state.start("Menu");
+        }
+
+        private _letterBack = () => {
+            if (this._newLetterIndex > 0) {
+                this._newLetterIndex--;
+            } else {
+             this._newLetterIndex = this._fontStr.length-1;
+            }
+             this._updateNewName();
+        }
+
+        private _letterForward = () => {
+            if (this._newLetterIndex < (this._fontStr.length-1)) {
+                this._newLetterIndex++;
+            } else {
+                this._newLetterIndex = 0;
+            }
+                this._updateNewName();
+        }
+
+        private _enterScore = () => {
+            let latestScore = new HighScore(this._newName, Global._score, Global._level);
+            Global._highscores.push(latestScore);
+
+            Global._highscores = Global._highscores.sort(sortScores);
+            Global._highscores = Global._highscores.slice(0,Global.TOTAL_SCORES);
+
+            // reset current score
+            Global._score = 0;
+            Global._level = 0;
+            this.game.state.start("HighScores");
+
+        }
+
+        private _letterSelected = () => {
+            let selectedLetter = this._fontStr[this._newLetterIndex];
+            switch (selectedLetter) {
+                case Global.DEL_CHAR:
+                    this._newName = this._newName.slice(0, this._newName.length-1);
+                    this._updateNewName();               
+                    break;
+                case Global.END_CHAR:
+                    this._enterScore();
+                    break;
+                default:
+                    // select current letter
+                    this._newName += this._fontStr[this._newLetterIndex];
+                    if (this._newName.length == Global.NAME_LENGTH-1) {
+                        this._enterScore();
+                    } else {
+                        this._updateNewName();               
+                    }
+            }
         }
 
         // -------------------------------------------------------------------------
         public update() {
-            if (this._continueKey.isDown) {
-                this.game.state.start("Menu");
-            }
+           
         }
 
         // your got a high score!
         private _newHighScore = () => {
             // text 
-            var fontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-"
-            this._newHighScoreFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
+            this._fontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-@+";
+            this._newHighScoreFont = this.game.add.retroFont('chrome-font', 31, 31, this._fontStr, 10, 1, 1);
             this._newHighScoresLabel = this.game.add.image(0,0,this._newHighScoreFont);            
             let newHighScore = "New high score!";
             this._newHighScoreFont.setText(newHighScore,true,0,0,Phaser.RetroFont.ALIGN_CENTER);
             this._newHighScoresLabel.x = this.game.width/2 - this._newHighScoresLabel.width/2;
-            this._newHighScoresLabel.y = this.game.height/2 - this._newHighScoresLabel.height/2 + 100; 
+            this._newHighScoresLabel.y = this.game.height/2 - this._newHighScoresLabel.height/2 - 100; 
+
+            this._newNameFont = this.game.add.retroFont('chrome-font', 31, 31, this._fontStr, 10, 1, 1);
+            this._newNameLabel = this.game.add.image(0,0,this._newNameFont);
+            this._newNameLabel.tint = 0x00ff00;               
+            this._newLetterFont = this.game.add.retroFont('chrome-font', 31, 31, this._fontStr, 10, 1, 1);
+            this._newLetterLabel = this.game.add.image(0,0,this._newLetterFont);  
+            this._newLetterLabel.tint = 0xff0000;          
+
+
+            this._newName = "";
+            this._newLetterIndex = 0;
+
+            this._updateNewName();
+        }
+
+        private _updateNewName = () => {
+            this._newLetter = this._fontStr[this._newLetterIndex];
+
+            this._newNameFont.setText(this._newName,true,0,0,Phaser.RetroFont.ALIGN_CENTER);
+            this._newNameLabel.x = this.game.width/2 - this._newNameLabel.width/2;
+            this._newNameLabel.y = this.game.height/2 - this._newNameLabel.height/2; 
+
+            this._newLetterFont.setText(this._newLetter,true,0,0,Phaser.RetroFont.ALIGN_CENTER);
+            this._newLetterLabel.x = this._newNameLabel.x + this._newNameFont.width +  this._newLetterLabel.width;
+            this._newLetterLabel.y = this.game.height/2 - this._newLetterLabel.height/2; 
         }
 
         private _initTable = () => {
@@ -75,7 +178,7 @@ namespace Asteroids {
             let highScoreStr = "  Name        Level   Score   \n";
             highScoreStr +=    "------------------------------\n";
             for(let i=0; i<Global._highscores.length; i++) {
-                let name = padRight(Global._highscores[i].getName(),10);
+                let name = padRight(Global._highscores[i].getName(),Global.NAME_LENGTH);
                 let level = padLeft(Global._highscores[i].getLevel().toString(),5);
                 let score = padLeft(Global._highscores[i].getScore().toString(),10);
                 let scoreStr = ` ${name} ${level} ${score} \n\n`;

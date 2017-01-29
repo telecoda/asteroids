@@ -38,6 +38,9 @@ namespace Asteroids {
 
         // high score table
         static TOTAL_SCORES: number = 10;
+        static NAME_LENGTH: number = 10;
+        static DEL_CHAR: string = "@";
+        static END_CHAR: string = "+";
         static _highscores : Array<HighScore>;
 
     }
