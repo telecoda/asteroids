@@ -50,9 +50,12 @@ namespace Asteroids {
 			this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
             this._fireKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
   
+            // highscores
 
-            // Sort scores into order
-            Global._highscores = Global._highscores.sort(sortScores);
+            this._loadScores();
+
+
+            this._saveScores();
 
             // check if current score fits in highscore table
             if (Global._score > Global._highscores[Global.TOTAL_SCORES-1].getScore()) {
@@ -68,6 +71,37 @@ namespace Asteroids {
             }
 
           
+        }
+
+        private _loadScores = () => {
+            // try to load from local storage
+            let highscoresStr:string = localStorage.getItem("highscores");
+
+            Global._highscores = new Array<HighScore>();
+
+            if (!highscoresStr) {
+                // init default scores               
+                for (let i=0; i< Global.TOTAL_SCORES; i++) {
+                    let score = new HighScore("name"+i, i*1000,i);
+                    Global._highscores.push(score);
+                } 
+            } else {
+                // unmarshal scores
+                let scoresArray = JSON.parse(highscoresStr);
+                for(let jsonScore of scoresArray) {
+                    let score = new HighScore(jsonScore._name, jsonScore._score, jsonScore._level);                    
+                    Global._highscores.push(score);
+                };
+            }
+
+            // Sort scores into order
+            Global._highscores = Global._highscores.sort(sortScores);
+
+        }
+
+        private _saveScores = () => {
+            let highscoresStr = JSON.stringify(Global._highscores)
+            localStorage.setItem("highscores", highscoresStr);
         }
 
         private _gotoMenu = () => {
@@ -99,6 +133,7 @@ namespace Asteroids {
             Global._highscores = Global._highscores.sort(sortScores);
             Global._highscores = Global._highscores.slice(0,Global.TOTAL_SCORES);
 
+            this._saveScores(); 
             // reset current score
             Global._score = 0;
             Global._level = 0;
@@ -158,12 +193,16 @@ namespace Asteroids {
         }
 
         private _updateNewName = () => {
-            this._newLetter = this._fontStr[this._newLetterIndex];
 
+            if (this._newName == "") {
+            this._newNameFont.setText(" ",true,0,0,Phaser.RetroFont.ALIGN_CENTER);
+            } else {
             this._newNameFont.setText(this._newName,true,0,0,Phaser.RetroFont.ALIGN_CENTER);
+            }
             this._newNameLabel.x = this.game.width/2 - this._newNameLabel.width/2;
             this._newNameLabel.y = this.game.height/2 - this._newNameLabel.height/2; 
 
+            this._newLetter = this._fontStr[this._newLetterIndex];
             this._newLetterFont.setText(this._newLetter,true,0,0,Phaser.RetroFont.ALIGN_CENTER);
             this._newLetterLabel.x = this._newNameLabel.x + this._newNameFont.width +  this._newLetterLabel.width;
             this._newLetterLabel.y = this.game.height/2 - this._newLetterLabel.height/2; 
@@ -203,7 +242,7 @@ namespace Asteroids {
     }
 
 
-    export function sortScores(s1: HighScore, s2: HighScore):number {
+    function sortScores(s1: HighScore, s2: HighScore):number {
         return s2.getScore()-s1.getScore();
     }
 }

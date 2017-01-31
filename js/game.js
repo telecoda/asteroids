@@ -16,19 +16,25 @@ var Asteroids;
     // constants
     Global.TOTAL_LIVES = 3;
     Global.TOTAL_LEVELS = 3;
-    Global.POINTS_PER_HIT = 5;
+    Global.POINTS_ASTEROID_PER_HIT = 50;
+    Global.POINTS_PER_ENEMY_HIT = 500;
     Global.HUD_Y = 20;
     Global.HUD_BORDER = 20;
     Global.HEALTHBAR_HEIGHT = 10;
     Global.HEALTHBAR_WIDTH = 800;
     // ship
     Global.SHIP_DRAG = 100;
-    Global.SHIP_MAX_VELOCITY = 200;
+    Global.SHIP_MAX_VELOCITY = 300;
     Global.MAX_HEALTH = 1000;
     // asteroids
-    Global.ASTEROID_MULTIPLIER = 1;
-    Global.ASTEROID_DAMAGE = 10;
+    Global.ASTEROID_MULTIPLIER = 2; // level * this = total asteroids
+    Global.ASTEROID_DAMAGE = 1;
     Global.MAX_ASTEROID_VELOCITY = 200;
+    // enemies
+    Global.ENEMY_BULLET_DAMAGE = 5;
+    Global.ENEMY_DAMAGE = 10;
+    Global.MAX_ENEMY_VELOCITY = 200;
+    Global.ENEMY_TIMER = 20; // number of seconds till new enemy appeaars
     // weapon
     Global.BULLET_SPEED = 300;
     Global.FIRE_RATE = 100;
@@ -98,6 +104,9 @@ var Asteroids;
                 // offset body from upper left x,y coord by 1/8th the width (25% / 2)
                 _this.body.setSize(bodyWidth, bodyHeight, scaledWidth / 8, scaledHeight / 8);
             };
+            _this.getSize = function () {
+                return _this._size;
+            };
             _this.hitByBullet = function () {
                 // decrease size
                 if (_this._size > Asteroid.MIN_SIZE) {
@@ -149,6 +158,66 @@ var Asteroids;
 })(Asteroids || (Asteroids = {}));
 var Asteroids;
 (function (Asteroids) {
+    var Enemy = (function (_super) {
+        __extends(Enemy, _super);
+        // -------------------------------------------------------------------------
+        function Enemy(game, x, y, spaceship, fireDelay) {
+            var _this = _super.call(this, game, 0, 0, "enemy") || this;
+            _this._fireWeapon = function () {
+                if (_this._isFiring && _this.game) {
+                    _this.weapon.fireAtSprite(_this._spaceship);
+                    _this.game.time.events.add(Phaser.Timer.SECOND * _this._fireDelay, _this._fireWeapon, _this);
+                }
+            };
+            _this.hitByBullet = function () {
+                // destroy it
+                _this.exists = false;
+                _this._isFiring = false;
+                return true;
+            };
+            _this.setGroup = function (group) {
+                _this._group = group;
+            };
+            _this.addToGroup = function () {
+                _this._group.add(_this);
+            };
+            _this.startMoving = function () {
+                _this.body.velocity.x = (Asteroids.Global.MAX_ENEMY_VELOCITY / 2) - (Math.random() * Asteroids.Global.MAX_ENEMY_VELOCITY);
+                _this.body.velocity.y = (Asteroids.Global.MAX_ENEMY_VELOCITY / 2) - (Math.random() * Asteroids.Global.MAX_ENEMY_VELOCITY);
+            };
+            _this._spaceship = spaceship;
+            _this._fireDelay = fireDelay;
+            // center enemy sprite horizontally
+            _this.anchor.x = 0.5;
+            _this.anchor.y = 0.5;
+            // disable physics for asteroid
+            game.physics.arcade.enable(_this, false);
+            // no gravity
+            var body = _this.body;
+            body.allowGravity = false;
+            body.angularVelocity = -100;
+            body.maxVelocity.set(200);
+            var bodyWidth = _this.width * 0.75;
+            var bodyHeight = _this.height * 0.75;
+            // offset body from upper left x,y coord by 1/8th the width (25% / 2)
+            _this.body.setSize(bodyWidth, bodyHeight, _this.width / 4, _this.height / 4);
+            _this.weapon = _this.game.add.weapon(Asteroids.Global.MAX_BULLETS, 'enemy-bullet');
+            _this.weapon.bulletKillType = Phaser.Weapon.KILL_WORLD_BOUNDS;
+            _this.weapon.bulletSpeed = Asteroids.Global.BULLET_SPEED;
+            _this.weapon.fireRate = Asteroids.Global.FIRE_RATE;
+            _this.weapon.trackSprite(_this, 0, 0, true);
+            _this._isFiring = true;
+            _this.game.time.events.add(Phaser.Timer.SECOND * _this._fireDelay, _this._fireWeapon, _this);
+            _this.x = x;
+            _this.y = y;
+            return _this;
+        }
+        return Enemy;
+    }(Phaser.Sprite));
+    Asteroids.Enemy = Enemy;
+})(Asteroids || (Asteroids = {}));
+var Asteroids;
+(function (Asteroids) {
     var HighScore = (function () {
         // -------------------------------------------------------------------------
         function HighScore(name, score, level) {
@@ -175,18 +244,10 @@ var Asteroids;
     var Boot = (function (_super) {
         __extends(Boot, _super);
         function Boot() {
-            return _super !== null && _super.apply(this, arguments) || this;
+            return _super.apply(this, arguments) || this;
         }
         // -------------------------------------------------------------------------
         Boot.prototype.create = function () {
-            // init high score table
-            Asteroids.Global._highscores = new Array();
-            for (var i = 0; i < Asteroids.Global.TOTAL_SCORES; i++) {
-                var score = new Asteroids.HighScore("name" + i, i * 1000, i);
-                Asteroids.Global._highscores.push(score);
-            }
-            // Sort scores into order
-            Asteroids.Global._highscores = Asteroids.Global._highscores.sort(Asteroids.sortScores);
             Asteroids.Global._score = 0;
             Asteroids.Global._level = 0;
             this.game.state.start("Preload");
@@ -200,7 +261,7 @@ var Asteroids;
     var GameOver = (function (_super) {
         __extends(GameOver, _super);
         function GameOver() {
-            return _super !== null && _super.apply(this, arguments) || this;
+            return _super.apply(this, arguments) || this;
         }
         // -------------------------------------------------------------------------
         GameOver.prototype.create = function () {
@@ -234,9 +295,37 @@ var Asteroids;
     var HighScores = (function (_super) {
         __extends(HighScores, _super);
         function HighScores() {
-            var _this = _super !== null && _super.apply(this, arguments) || this;
+            var _this = _super.apply(this, arguments) || this;
             // state
             _this._enteringName = false;
+            _this._loadScores = function () {
+                // try to load from local storage
+                var highscoresStr = localStorage.getItem("highscores");
+                Asteroids.Global._highscores = new Array();
+                if (!highscoresStr) {
+                    // init default scores               
+                    for (var i = 0; i < Asteroids.Global.TOTAL_SCORES; i++) {
+                        var score = new Asteroids.HighScore("name" + i, i * 1000, i);
+                        Asteroids.Global._highscores.push(score);
+                    }
+                }
+                else {
+                    // unmarshal scores
+                    var scoresArray = JSON.parse(highscoresStr);
+                    for (var _i = 0, scoresArray_1 = scoresArray; _i < scoresArray_1.length; _i++) {
+                        var jsonScore = scoresArray_1[_i];
+                        var score = new Asteroids.HighScore(jsonScore._name, jsonScore._score, jsonScore._level);
+                        Asteroids.Global._highscores.push(score);
+                    }
+                    ;
+                }
+                // Sort scores into order
+                Asteroids.Global._highscores = Asteroids.Global._highscores.sort(sortScores);
+            };
+            _this._saveScores = function () {
+                var highscoresStr = JSON.stringify(Asteroids.Global._highscores);
+                localStorage.setItem("highscores", highscoresStr);
+            };
             _this._gotoMenu = function () {
                 _this.game.state.start("Menu");
             };
@@ -263,6 +352,7 @@ var Asteroids;
                 Asteroids.Global._highscores.push(latestScore);
                 Asteroids.Global._highscores = Asteroids.Global._highscores.sort(sortScores);
                 Asteroids.Global._highscores = Asteroids.Global._highscores.slice(0, Asteroids.Global.TOTAL_SCORES);
+                _this._saveScores();
                 // reset current score
                 Asteroids.Global._score = 0;
                 Asteroids.Global._level = 0;
@@ -310,10 +400,15 @@ var Asteroids;
                 _this._updateNewName();
             };
             _this._updateNewName = function () {
-                _this._newLetter = _this._fontStr[_this._newLetterIndex];
-                _this._newNameFont.setText(_this._newName, true, 0, 0, Phaser.RetroFont.ALIGN_CENTER);
+                if (_this._newName == "") {
+                    _this._newNameFont.setText(" ", true, 0, 0, Phaser.RetroFont.ALIGN_CENTER);
+                }
+                else {
+                    _this._newNameFont.setText(_this._newName, true, 0, 0, Phaser.RetroFont.ALIGN_CENTER);
+                }
                 _this._newNameLabel.x = _this.game.width / 2 - _this._newNameLabel.width / 2;
                 _this._newNameLabel.y = _this.game.height / 2 - _this._newNameLabel.height / 2;
+                _this._newLetter = _this._fontStr[_this._newLetterIndex];
                 _this._newLetterFont.setText(_this._newLetter, true, 0, 0, Phaser.RetroFont.ALIGN_CENTER);
                 _this._newLetterLabel.x = _this._newNameLabel.x + _this._newNameFont.width + _this._newLetterLabel.width;
                 _this._newLetterLabel.y = _this.game.height / 2 - _this._newLetterLabel.height / 2;
@@ -364,8 +459,9 @@ var Asteroids;
             this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
             this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
             this._fireKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
-            // Sort scores into order
-            Asteroids.Global._highscores = Asteroids.Global._highscores.sort(sortScores);
+            // highscores
+            this._loadScores();
+            this._saveScores();
             // check if current score fits in highscore table
             if (Asteroids.Global._score > Asteroids.Global._highscores[Asteroids.Global.TOTAL_SCORES - 1].getScore()) {
                 this._enteringName = true;
@@ -389,7 +485,6 @@ var Asteroids;
     function sortScores(s1, s2) {
         return s2.getScore() - s1.getScore();
     }
-    Asteroids.sortScores = sortScores;
 })(Asteroids || (Asteroids = {}));
 function padLeft(value, width) {
     if (value.length < width) {
@@ -420,7 +515,7 @@ var Asteroids;
     var Menu = (function (_super) {
         __extends(Menu, _super);
         function Menu() {
-            var _this = _super !== null && _super.apply(this, arguments) || this;
+            var _this = _super.apply(this, arguments) || this;
             _this._showHighScores = function () {
                 // only go to high scores if game is still on menu
                 if (_this.game.state.getCurrentState().key == "Menu") {
@@ -492,7 +587,7 @@ var Asteroids;
     var Play = (function (_super) {
         __extends(Play, _super);
         function Play() {
-            var _this = _super !== null && _super.apply(this, arguments) || this;
+            var _this = _super.apply(this, arguments) || this;
             _this._asteroidCount = 0;
             _this._bullets = [];
             _this._startThruster = function () {
@@ -537,7 +632,8 @@ var Asteroids;
                 _this._levelLabel.y = Asteroids.Global.HUD_Y;
                 _this._levelLabel.x = Asteroids.Global.HUD_BORDER;
                 _this._asteroidCount = Asteroids.Global._level * Asteroids.Global.ASTEROID_MULTIPLIER;
-                _this._initAsteroids(_this._asteroidCount);
+                _this._initAsteroids(Asteroids.Global._level * Asteroids.Global.ASTEROID_MULTIPLIER);
+                _this._initEnemies(Asteroids.Global._level);
                 //  Wait 2 seconds then start level
                 _this.game.time.events.add(Phaser.Timer.SECOND * 2, _this._startPlaying, _this);
             };
@@ -572,9 +668,11 @@ var Asteroids;
             };
             _this._resetPlayer = function (health) {
                 _this._spaceship.health = health;
+                //this._spaceship.body.reset();
                 _this._spaceship.body.drag.set(Asteroids.Global.SHIP_DRAG);
                 _this._spaceship.body.maxVelocity.set(Asteroids.Global.SHIP_MAX_VELOCITY);
-                _this._spaceship.angle = 0;
+                _this._spaceship.body.angularVelocity = 0;
+                _this._spaceship.angle = -90;
                 _this._spaceship.x = _this.game.world.centerX;
                 _this._spaceship.y = _this.game.world.centerY;
             };
@@ -618,6 +716,26 @@ var Asteroids;
                     asteroid.startMoving();
                 }
             };
+            _this._initEnemies = function (count) {
+                if (_this._enemies) {
+                    _this._enemies.destroy(true);
+                }
+                _this._enemies = new Phaser.Group(_this.game);
+                for (var i = 0; i < count; i++) {
+                    _this._addEnemy();
+                }
+            };
+            _this._addEnemy = function () {
+                if (_this._state == Play.PLAYING || _this._state == Play.LEVEL_START) {
+                    var x = _this.game.width * Math.random();
+                    var y = -50;
+                    var enemy = new Asteroids.Enemy(_this.game, x, y, _this._spaceship, 10 - Asteroids.Global._level);
+                    enemy.setGroup(_this._enemies);
+                    enemy.addToGroup();
+                    enemy.startMoving();
+                    _this.game.time.events.add(Phaser.Timer.SECOND * Asteroids.Global.ENEMY_TIMER, _this._addEnemy, _this);
+                }
+            };
             _this._bulletHitAsteroid = function (bullet, asteroid) {
                 // we can't kill/destroy the asteroid here as it messes up the underlying array an we'll
                 // get undefined errors as we try to reference deleted objects.
@@ -630,9 +748,34 @@ var Asteroids;
                     // increase count as asteroid has split in two
                     _this._asteroidCount++;
                 }
-                _this._increaseScore(Asteroids.Global.POINTS_PER_HIT);
+                _this._increaseScore(Asteroids.Global.POINTS_ASTEROID_PER_HIT);
                 // create explosion
                 _this._createExplosionAt(bullet.x, bullet.y);
+            };
+            _this._bulletHitEnemy = function (bullet, enemy) {
+                bullet.kill();
+                var destroyed = enemy.hitByBullet();
+                _this._increaseScore(Asteroids.Global.POINTS_PER_ENEMY_HIT);
+                // create explosion
+                _this._createExplosionAt(enemy.x, enemy.y);
+            };
+            _this._bulletHitBullet = function (playerBullet, enemyBullet) {
+                playerBullet.kill();
+                enemyBullet.kill();
+                // create explosion
+                _this._createExplosionAt(playerBullet.x, playerBullet.y);
+                _this._createExplosionAt(enemyBullet.x, enemyBullet.y);
+            };
+            _this._bulletHitSpaceship = function (spaceship, enemyBullet) {
+                enemyBullet.kill();
+                // create explosion
+                _this._createExplosionAt(enemyBullet.x, enemyBullet.y);
+                _this._spaceship.health -= Asteroids.Global.ENEMY_BULLET_DAMAGE;
+                // change colour briefly
+                if (_this._spaceship.health > 0) {
+                    _this._spaceship.loadTexture("spaceship-hit");
+                    _this.game.time.events.add(Phaser.Timer.SECOND * 0.1, _this._resetShipTexture.bind(_this));
+                }
             };
             _this._updateLivesText = function () {
                 _this._livesFont.setText("Lives:" + Asteroids.Global._lives);
@@ -655,7 +798,15 @@ var Asteroids;
                 _this._explosions.add(explosion);
             };
             _this._spaceshipHitAsteroid = function (spaceship, asteroid) {
-                spaceship.health -= Asteroids.Global.ASTEROID_DAMAGE;
+                spaceship.health -= (Asteroids.Global.ASTEROID_DAMAGE * asteroid.getSize());
+                // change colour briefly
+                if (spaceship.health > 0) {
+                    spaceship.loadTexture("spaceship-hit");
+                    _this.game.time.events.add(Phaser.Timer.SECOND * 0.1, _this._resetShipTexture.bind(_this));
+                }
+            };
+            _this._spaceshipHitEnemy = function (spaceship, enemy) {
+                spaceship.health -= Asteroids.Global.ENEMY_DAMAGE;
                 // change colour briefly
                 if (spaceship.health > 0) {
                     spaceship.loadTexture("spaceship-hit");
@@ -742,9 +893,25 @@ var Asteroids;
                     this._asteroids.forEachExists(function (sprite) {
                         this._wrapLocation(sprite);
                     }, this);
+                    this._enemies.forEachExists(function (sprite) {
+                        this._wrapLocation(sprite);
+                    }, this);
                     //  Collision detection
+                    // player bullet hits asteroid
                     this.game.physics.arcade.overlap(this._weapon.bullets, this._asteroids, this._bulletHitAsteroid, null, this);
+                    // player hits asteroid
                     this.game.physics.arcade.overlap(this._spaceship, this._asteroids, this._spaceshipHitAsteroid, null, this);
+                    // player hits enemy 
+                    this.game.physics.arcade.overlap(this._spaceship, this._enemies, this._spaceshipHitEnemy, null, this);
+                    // players bullet hits enemy
+                    this.game.physics.arcade.overlap(this._weapon.bullets, this._enemies, this._bulletHitEnemy, null, this);
+                    this._enemies.forEachExists(function (enemy) {
+                        // players bullet hits enemy bullet
+                        this.game.physics.arcade.overlap(this._weapon.bullets, enemy.weapon.bullets, this._bulletHitBullet, null, this);
+                        // enemy bullet hits player
+                        this.game.physics.arcade.overlap(enemy.weapon.bullets, this._spaceship, this._bulletHitSpaceship, null, this);
+                    }, this);
+                    this.game.physics.arcade.overlap(this._weapon.bullets, this._enemies, this._bulletHitEnemy, null, this);
                     // update health display
                     // health remaining
                     this._updateHealthBar();
@@ -824,7 +991,7 @@ var Asteroids;
     var Preload = (function (_super) {
         __extends(Preload, _super);
         function Preload() {
-            var _this = _super !== null && _super.apply(this, arguments) || this;
+            var _this = _super.apply(this, arguments) || this;
             // music decoded, ready for game
             _this._ready = false;
             return _this;
@@ -836,6 +1003,8 @@ var Asteroids;
             this.load.image("spaceship", "assets/spaceship.png");
             this.load.image("spaceship-hit", "assets/spaceship-hit.png");
             this.load.image("bullet", "assets/bullet.png");
+            this.load.image("enemy", "assets/enemy.png");
+            this.load.image("enemy-bullet", "assets/enemy-bullet.png");
             this.load.spritesheet("explosion", "assets/explosion_spritesheet.png", 128, 128, 70);
             this.load.image("thruster", "assets/particles/red.png");
             this.game.load.image('chrome-font', 'assets/fonts/ST_ADM.GIF');

@@ -12,6 +12,7 @@ namespace Asteroids {
         private _background: Phaser.Sprite;
         private _spaceship: Phaser.Sprite;
         private _asteroids: Phaser.Group;
+        private _enemies: Phaser.Group;
         private _explosions: Phaser.Group;
         private _hud: Phaser.Group;
         private _asteroidCount: number = 0;
@@ -140,10 +141,27 @@ namespace Asteroids {
                     this._asteroids.forEachExists(function (sprite: Phaser.Sprite) {
                         this._wrapLocation(sprite);
                     }, this);
+                    this._enemies.forEachExists(function (sprite: Phaser.Sprite) {
+                        this._wrapLocation(sprite);
+                    }, this);
 
                     //  Collision detection
+                    // player bullet hits asteroid
                     this.game.physics.arcade.overlap(this._weapon.bullets, this._asteroids, this._bulletHitAsteroid, null, this);
+                    // player hits asteroid
                     this.game.physics.arcade.overlap(this._spaceship, this._asteroids, this._spaceshipHitAsteroid, null, this);
+                    // player hits enemy 
+                    this.game.physics.arcade.overlap(this._spaceship, this._enemies, this._spaceshipHitEnemy, null, this);
+                    // players bullet hits enemy
+                    this.game.physics.arcade.overlap(this._weapon.bullets, this._enemies, this._bulletHitEnemy, null, this);
+                    this._enemies.forEachExists(function (enemy: Asteroids.Enemy) {
+                        // players bullet hits enemy bullet
+                        this.game.physics.arcade.overlap(this._weapon.bullets, enemy.weapon.bullets, this._bulletHitBullet, null, this);
+                        // enemy bullet hits player
+                        this.game.physics.arcade.overlap(enemy.weapon.bullets, this._spaceship, this._bulletHitSpaceship, null, this);
+                    }, this);
+                    this.game.physics.arcade.overlap(this._weapon.bullets, this._enemies, this._bulletHitEnemy, null, this);
+                    
                     // update health display
                     // health remaining
                     this._updateHealthBar();
@@ -212,7 +230,8 @@ namespace Asteroids {
             this._levelLabel.y = Global.HUD_Y;
             this._levelLabel.x = Global.HUD_BORDER;
             this._asteroidCount = Global._level * Global.ASTEROID_MULTIPLIER;
-            this._initAsteroids(this._asteroidCount);
+            this._initAsteroids(Global._level * Global.ASTEROID_MULTIPLIER);
+            this._initEnemies(Global._level);
             //  Wait 2 seconds then start level
             this.game.time.events.add(Phaser.Timer.SECOND * 2, this._startPlaying, this);
         }
@@ -252,9 +271,11 @@ namespace Asteroids {
 
         private _resetPlayer = (health: number) => {
             this._spaceship.health = health;
+            //this._spaceship.body.reset();
             this._spaceship.body.drag.set(Global.SHIP_DRAG);
             this._spaceship.body.maxVelocity.set(Global.SHIP_MAX_VELOCITY);
-            this._spaceship.angle = 0;
+            this._spaceship.body.angularVelocity = 0;
+            this._spaceship.angle = -90;
             this._spaceship.x = this.game.world.centerX;
             this._spaceship.y = this.game.world.centerY
         }
@@ -305,6 +326,30 @@ namespace Asteroids {
             }
         }
 
+        private _initEnemies = (count: number) => {
+            if (this._enemies) {
+                this._enemies.destroy(true);
+            }
+
+            this._enemies = new Phaser.Group(this.game);
+            for (var i = 0; i< count; i++) {
+                this._addEnemy();
+            }
+        }
+
+        private _addEnemy = () => {
+            if (this._state == Play.PLAYING || this._state == Play.LEVEL_START) {
+                var x = this.game.width * Math.random();
+                var y = -50;
+                var enemy = new Asteroids.Enemy(this.game ,x ,y, this._spaceship, 10 - Global._level);
+                enemy.setGroup(this._enemies)
+                enemy.addToGroup();
+                enemy.startMoving();
+
+                this.game.time.events.add(Phaser.Timer.SECOND * Global.ENEMY_TIMER ,this._addEnemy, this);
+            }
+        }
+
         private _bulletHitAsteroid = (bullet: Phaser.Bullet,asteroid: Asteroids.Asteroid ) => {
             // we can't kill/destroy the asteroid here as it messes up the underlying array an we'll
             // get undefined errors as we try to reference deleted objects.
@@ -316,10 +361,40 @@ namespace Asteroids {
                 // increase count as asteroid has split in two
                 this._asteroidCount++;
             }
-            this._increaseScore(Global.POINTS_PER_HIT);
+            this._increaseScore(Global.POINTS_ASTEROID_PER_HIT);
             // create explosion
             this._createExplosionAt(bullet.x,bullet.y);
         }
+
+        private _bulletHitEnemy = (bullet: Phaser.Bullet,enemy: Asteroids.Enemy ) => {
+            bullet.kill();
+            var destroyed = enemy.hitByBullet();
+            this._increaseScore(Global.POINTS_PER_ENEMY_HIT);
+            // create explosion
+            this._createExplosionAt(enemy.x,enemy.y);
+        }
+
+        private _bulletHitBullet = (playerBullet: Phaser.Bullet,enemyBullet: Phaser.Bullet ) => {
+            playerBullet.kill();
+            enemyBullet.kill();
+            // create explosion
+            this._createExplosionAt(playerBullet.x,playerBullet.y);
+            this._createExplosionAt(enemyBullet.x,enemyBullet.y);
+        }
+
+       private _bulletHitSpaceship = (spaceship: Phaser.Sprite,enemyBullet: Phaser.Bullet) => {
+            enemyBullet.kill();
+            // create explosion
+            this._createExplosionAt(enemyBullet.x,enemyBullet.y);
+
+            this._spaceship.health -= Global.ENEMY_BULLET_DAMAGE;
+            // change colour briefly
+            if (this._spaceship.health > 0) {
+                this._spaceship.loadTexture("spaceship-hit");
+                this.game.time.events.add(Phaser.Timer.SECOND * 0.1,this._resetShipTexture.bind(this));
+            }
+        }
+
 
         private _updateLivesText = () => {
             this._livesFont.setText("Lives:"+ Global._lives);
@@ -346,7 +421,17 @@ namespace Asteroids {
         }
 
         private _spaceshipHitAsteroid = (spaceship: Phaser.Sprite,asteroid: Asteroids.Asteroid ) => {
-            spaceship.health -= Global.ASTEROID_DAMAGE;
+            spaceship.health -= (Global.ASTEROID_DAMAGE * asteroid.getSize());
+            // change colour briefly
+            if (spaceship.health > 0) {
+                spaceship.loadTexture("spaceship-hit");
+                this.game.time.events.add(Phaser.Timer.SECOND * 0.1,this._resetShipTexture.bind(this));
+            }
+
+        }
+
+        private _spaceshipHitEnemy = (spaceship: Phaser.Sprite,enemy: Asteroids.Enemy ) => {
+            spaceship.health -= Global.ENEMY_DAMAGE;
             // change colour briefly
             if (spaceship.health > 0) {
                 spaceship.loadTexture("spaceship-hit");

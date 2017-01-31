@@ -55,6 +55,10 @@ namespace Asteroids {
             this.body.setSize(bodyWidth, bodyHeight, scaledWidth/8, scaledHeight/8)
         }
 
+        public getSize = ():number => {
+            return this._size;
+        }
+
         public hitByBullet = ():boolean => {
             // decrease size
             if (this._size > Asteroid.MIN_SIZE) {
