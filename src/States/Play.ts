@@ -33,7 +33,13 @@ namespace Asteroids {
         private _explosion: Phaser.Animation;
         // particles
         private _thruster: Phaser.Particles.Arcade.Emitter;
-  
+
+        // audio
+        private _music: Phaser.Sound;
+        private _playerLaserSound: Phaser.Sound;
+        private _explosionSound: Phaser.Sound;
+        private _hyperspaceSound: Phaser.Sound;
+
         // state
         private _state: number;
 
@@ -106,8 +112,15 @@ namespace Asteroids {
 
             // animations
             this._explosions = new Phaser.Group(this.game);
-      
-    
+
+            // audio
+            this._music = this.game.add.audio('music');
+            this._playerLaserSound = this.game.add.audio('laser-1');
+            this._explosionSound = this.game.add.audio('explosion-1');
+            this._hyperspaceSound = this.game.add.audio('hyperspace');
+            this._music.play();
+            this._music.volume = 10;
+          
 			// setup input
 			this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
 			this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
@@ -208,6 +221,7 @@ namespace Asteroids {
 			// this.game.debug.text("Level:" + Global._level, 400, 80, "#ffffff");
 			// this.game.debug.text("Left:" + this._asteroidCount, 500, 80, "#ffffff");
             // this._weapon.debug();
+            this.game.debug.soundInfo(this._music, 2, 160);
   		}
 
         private _startNewGame = () => {
@@ -417,6 +431,7 @@ namespace Asteroids {
             explosion.animations.add("boom");
             explosion.animations.play("boom",10,false,true);
             this._explosions.add(explosion);
+            this._explosionSound.play();
 
         }
 
@@ -465,6 +480,8 @@ namespace Asteroids {
 
             if (this._fireKey.isDown) {
                 this._weapon.fire()
+                // play sound
+                this._playerLaserSound.play();
             }
 
         }

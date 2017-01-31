@@ -166,6 +166,7 @@ var Asteroids;
             _this._fireWeapon = function () {
                 if (_this._isFiring && _this.game) {
                     _this.weapon.fireAtSprite(_this._spaceship);
+                    _this._enemyLaserSound.play();
                     _this.game.time.events.add(Phaser.Timer.SECOND * _this._fireDelay, _this._fireWeapon, _this);
                 }
             };
@@ -207,6 +208,7 @@ var Asteroids;
             _this.weapon.fireRate = Asteroids.Global.FIRE_RATE;
             _this.weapon.trackSprite(_this, 0, 0, true);
             _this._isFiring = true;
+            _this._enemyLaserSound = _this.game.add.audio('laser-2');
             _this.game.time.events.add(Phaser.Timer.SECOND * _this._fireDelay, _this._fireWeapon, _this);
             _this.x = x;
             _this.y = y;
@@ -796,6 +798,7 @@ var Asteroids;
                 explosion.animations.add("boom");
                 explosion.animations.play("boom", 10, false, true);
                 _this._explosions.add(explosion);
+                _this._explosionSound.play();
             };
             _this._spaceshipHitAsteroid = function (spaceship, asteroid) {
                 spaceship.health -= (Asteroids.Global.ASTEROID_DAMAGE * asteroid.getSize());
@@ -867,6 +870,13 @@ var Asteroids;
             this._hud.add(this._healthBar);
             // animations
             this._explosions = new Phaser.Group(this.game);
+            // audio
+            this._music = this.game.add.audio('music');
+            this._playerLaserSound = this.game.add.audio('laser-1');
+            this._explosionSound = this.game.add.audio('explosion-1');
+            this._hyperspaceSound = this.game.add.audio('hyperspace');
+            this._music.play();
+            this._music.volume = 10;
             // setup input
             this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
             this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
@@ -928,6 +938,7 @@ var Asteroids;
             // this.game.debug.text("Level:" + Global._level, 400, 80, "#ffffff");
             // this.game.debug.text("Left:" + this._asteroidCount, 500, 80, "#ffffff");
             // this._weapon.debug();
+            this.game.debug.soundInfo(this._music, 2, 160);
         };
         Play.prototype._resetShipTexture = function () {
             this._spaceship.loadTexture("spaceship");
@@ -951,6 +962,8 @@ var Asteroids;
             }
             if (this._fireKey.isDown) {
                 this._weapon.fire();
+                // play sound
+                this._playerLaserSound.play();
             }
         };
         Play.prototype._wrapLocation = function (sprite) {
@@ -998,6 +1011,7 @@ var Asteroids;
         }
         // -------------------------------------------------------------------------
         Preload.prototype.preload = function () {
+            // images
             this.load.image("stars", "assets/stars.png");
             this.load.image("asteroid-01", "assets/asteroid-01.png");
             this.load.image("spaceship", "assets/spaceship.png");
@@ -1010,6 +1024,14 @@ var Asteroids;
             this.game.load.image('chrome-font', 'assets/fonts/ST_ADM.GIF');
             this.game.load.image('16x16-font', 'assets/fonts/16x16-cool-metal.png');
             this.game.load.image('260-font', 'assets/fonts/260.png');
+            // audio
+            this.game.load.audio('music', 'assets/audio/TheLoomingBattle.ogg');
+            this.game.load.audio('explosion-1', 'assets/audio/Explosion10.ogg');
+            this.game.load.audio('explosion-2', 'assets/audio/Explosion18.ogg');
+            this.game.load.audio('explosion-3', 'assets/audio/Explosion20.ogg');
+            this.game.load.audio('hyperspace', 'assets/audio/Jump3.ogg');
+            this.game.load.audio('laser-1', 'assets/audio/Laser_Shoot.ogg');
+            this.game.load.audio('laser-2', 'assets/audio/Laser_Shoot5.ogg');
         };
         // -------------------------------------------------------------------------
         Preload.prototype.create = function () {

@@ -10,6 +10,8 @@ namespace Asteroids {
         private _isFiring: boolean;
         private _spaceship: Phaser.Sprite;
 
+        private _enemyLaserSound: Phaser.Sound;
+
 
         // -------------------------------------------------------------------------
         public constructor(game: Phaser.Game, x:number, y:number, spaceship: Phaser.Sprite, fireDelay: number) {
@@ -43,6 +45,8 @@ namespace Asteroids {
             this.weapon.fireRate = Global.FIRE_RATE;
             this.weapon.trackSprite(this, 0, 0, true);
             this._isFiring = true;
+            this._enemyLaserSound = this.game.add.audio('laser-2');
+
             this.game.time.events.add(Phaser.Timer.SECOND * this._fireDelay, this._fireWeapon, this);
 
             this.x = x;
@@ -53,6 +57,7 @@ namespace Asteroids {
         private _fireWeapon = () => {
             if (this._isFiring && this.game) {
                 this.weapon.fireAtSprite(this._spaceship);
+                this._enemyLaserSound.play();
                 this.game.time.events.add(Phaser.Timer.SECOND * this._fireDelay, this._fireWeapon, this);
             }
         }
