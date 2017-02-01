@@ -25,3 +25,6 @@ launch chrome with remote debugger enabled:
 [Ship artwork from www.unluckystudio.com](www.unluckystudio.com)
 [Explosion spritesheet](http://gushh.net/blog/wp-content/uploads/2011/06/explosion_1_38_128_corrected.png)
 [Retro-Fonts](https://phaser.io/examples)
+[Audio explosions](http://opengameart.org/content/9-explosion-sounds) 
+[Audio misc sounds](http://opengameart.org/content/100-plus-game-sound-effects-wavoggm4a)
+[Music](http://opengameart.org/sites/default/files/TheLoomingBattle_0.OGG)

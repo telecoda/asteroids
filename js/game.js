@@ -891,7 +891,7 @@ var Asteroids;
                 var livesScale = _this.game.add.tween(_this._livesLabel);
                 livesScale.to({ tint: 0xffffff }, 1000 + Math.random() * 3000, Phaser.Easing.Bounce.In);
                 livesScale.start();
-                // TODO play extra life sound
+                _this._extralifeSound.play();
             };
             _this._createExplosionAt = function (x, y) {
                 var explosion = new Phaser.Sprite(_this.game, x, y);
@@ -985,6 +985,8 @@ var Asteroids;
             this._explosionSound3 = this.game.add.audio('explosion-3');
             this._explosionSound3.volume = 5;
             this._hyperspaceSound = this.game.add.audio('hyperspace');
+            this._extralifeSound = this.game.add.audio('extra-life');
+            this._extralifeSound.volume = 10;
             this._music.play();
             this._music.volume = 6;
             // setup input
@@ -1043,7 +1045,7 @@ var Asteroids;
             }
         };
         Play.prototype.render = function () {
-            this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, 80, "#ffffff");
+            this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, this.game.height - 10, "#ffffff");
         };
         Play.prototype._resetShipTexture = function () {
             this._spaceship.loadTexture("spaceship");
@@ -1137,6 +1139,7 @@ var Asteroids;
             this.game.load.audio('hyperspace', 'assets/audio/Jump3.ogg');
             this.game.load.audio('laser-1', 'assets/audio/Laser_Shoot.ogg');
             this.game.load.audio('laser-2', 'assets/audio/Laser_Shoot5.ogg');
+            this.game.load.audio('extra-life', 'assets/audio/Replenish.ogg');
         };
         // -------------------------------------------------------------------------
         Preload.prototype.create = function () {

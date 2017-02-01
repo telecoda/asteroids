@@ -28,6 +28,7 @@ namespace Asteroids {
             this.game.load.audio('hyperspace', 'assets/audio/Jump3.ogg');
             this.game.load.audio('laser-1', 'assets/audio/Laser_Shoot.ogg');
             this.game.load.audio('laser-2', 'assets/audio/Laser_Shoot5.ogg');
+            this.game.load.audio('extra-life', 'assets/audio/Replenish.ogg');
         }
 
         // -------------------------------------------------------------------------

@@ -41,6 +41,7 @@ namespace Asteroids {
         private _explosionSound2: Phaser.Sound;
         private _explosionSound3: Phaser.Sound;
         private _hyperspaceSound: Phaser.Sound;
+        private _extralifeSound: Phaser.Sound;
 
         // state
         private _state: number;
@@ -127,6 +128,8 @@ namespace Asteroids {
             this._explosionSound3 = this.game.add.audio('explosion-3');
             this._explosionSound3.volume = 5;
             this._hyperspaceSound = this.game.add.audio('hyperspace');
+            this._extralifeSound = this.game.add.audio('extra-life');
+            this._extralifeSound.volume = 10;
             this._music.play();
             this._music.volume = 6;
           
@@ -222,7 +225,7 @@ namespace Asteroids {
         }
 
 		public render() {
-			this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, 80, "#ffffff");
+			this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, this.game.height - 10, "#ffffff");
   		}
 
         private _startNewGame = () => {
@@ -460,7 +463,7 @@ namespace Asteroids {
             var livesScale=this.game.add.tween(this._livesLabel);
             livesScale.to({ tint: 0xffffff }, 1000 + Math.random() * 3000, Phaser.Easing.Bounce.In);
             livesScale.start();
-            // TODO play extra life sound
+            this._extralifeSound.play();
         }
 
         private _createExplosionAt = (x: number, y:number) => {
