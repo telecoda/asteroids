@@ -67,6 +67,7 @@ var Asteroids;
             _this.state.add("Menu", Asteroids.Menu);
             _this.state.add("Play", Asteroids.Play);
             _this.state.add("GameOver", Asteroids.GameOver);
+            _this.state.add("GameCompleted", Asteroids.GameCompleted);
             _this.state.add("HighScores", Asteroids.HighScores);
             // start
             _this.state.start("Boot");
@@ -257,6 +258,73 @@ var Asteroids;
         return Boot;
     }(Phaser.State));
     Asteroids.Boot = Boot;
+})(Asteroids || (Asteroids = {}));
+var Asteroids;
+(function (Asteroids) {
+    var GameCompleted = (function (_super) {
+        __extends(GameCompleted, _super);
+        function GameCompleted() {
+            return _super.apply(this, arguments) || this;
+        }
+        // -------------------------------------------------------------------------
+        GameCompleted.prototype.create = function () {
+            // init background
+            this._background = this.game.add.sprite(this.game.world.centerX, this.game.world.centerY, 'stars');
+            this._background.anchor.setTo(0.5, 0.5);
+            this._background.alpha = 0.3;
+            // title text 
+            var titleFontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789?!().,' ";
+            this._titleFont = this.game.add.retroFont('260-font', 48, 50, titleFontStr, 6, 0, 0);
+            this._titleLabel = this.game.add.image(0, 0, this._titleFont);
+            this._titleFont.setText("CONGRATULATIONS", true, 0, 0);
+            this._titleLabel.x = this.game.width / 2 - this._titleLabel.width / 2;
+            this._titleLabel.y = this.game.height + 50;
+            // instructions
+            var instFontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ/?!()-.,'\"0123456789";
+            this._instFont = this.game.add.retroFont('16x16-font', 16, 16, instFontStr, 20, 0, 0);
+            this._instLabel = this.game.add.image(0, 0, this._instFont);
+            var instructions = "You have saved the galaxy.\n\n";
+            instructions += "All the asteroids have been destroyed.\n\n";
+            instructions += "It is now a safe place to fly you ship.\n\n\n";
+            instructions += "You're a hero!\n\n";
+            instructions += "Credits\n\n";
+            instructions += "Coder: Telecoda\n\n";
+            instructions += "Graphics: xxx\n\n";
+            instructions += "Music: xxx\n";
+            this._instFont.setText(instructions, true, 0, 0, Phaser.RetroFont.ALIGN_CENTER);
+            this._instLabel.x = this.game.width / 2 - this._instLabel.width / 2;
+            this._instLabel.y = this.game.height + 200;
+            // text 
+            var fontStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZ .0123456789!(),'?:-";
+            this._gameCompletedFont = this.game.add.retroFont('chrome-font', 31, 31, fontStr, 10, 1, 1);
+            this._gameCompletedLabel = this.game.add.image(0, 0, this._gameCompletedFont);
+            this._gameCompletedFont.setText("WELL DONE");
+            this._gameCompletedLabel.x = this.game.width / 2 - this._gameCompletedLabel.width / 2;
+            this._gameCompletedLabel.y = this.game.height + 600;
+            this._gameCompletedLabel.tint = 0xff0000;
+            var titleBounce = this.game.add.tween(this._titleLabel);
+            titleBounce.to({ y: 50 }, 1000 + Math.random() * 3000, Phaser.Easing.Bounce.In);
+            titleBounce.start();
+            var instBounce = this.game.add.tween(this._instLabel);
+            instBounce.to({ y: 200 }, 1000 + Math.random() * 3000, Phaser.Easing.Bounce.In);
+            instBounce.start();
+            var compBounce = this.game.add.tween(this._gameCompletedLabel);
+            compBounce.to({ y: 600 }, 1000 + Math.random() * 3000, Phaser.Easing.Bounce.In);
+            compBounce.start();
+            // input
+            this._continueKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+        };
+        // -------------------------------------------------------------------------
+        GameCompleted.prototype.update = function () {
+            if (this._continueKey.isDown) {
+                this.game.state.start("HighScores");
+            }
+        };
+        GameCompleted.prototype.render = function () {
+        };
+        return GameCompleted;
+    }(Phaser.State));
+    Asteroids.GameCompleted = GameCompleted;
 })(Asteroids || (Asteroids = {}));
 var Asteroids;
 (function (Asteroids) {
@@ -594,8 +662,6 @@ var Asteroids;
             _this._bullets = [];
             _this._startThruster = function () {
                 _this._thruster.start(true, 500, null, 1);
-                //this.game.add.tween(this._thruster).to( { emitX: 800-64 }, 1000, Phaser.Easing.Sinusoidal.InOut, true, 0, Number.MAX_VALUE, true);
-                //this.game.add.tween(this._thruster).to( { emitY: 200 }, 4000, Phaser.Easing.Sinusoidal.InOut, true, 0, Number.MAX_VALUE, true);
             };
             _this._updateHealthBar = function () {
                 _this._healthBar.x = _this.game.width / 2 - Asteroids.Global.HEALTHBAR_WIDTH / 2;
@@ -658,8 +724,8 @@ var Asteroids;
                 _this.game.time.events.add(Phaser.Timer.SECOND * 2, _this._startNextLevel, _this);
             };
             _this._gameCompleted = function () {
-                _this._setStatus("Congratulations - Game Complete!");
                 _this._state = Play.GAME_COMPLETED;
+                _this.game.state.start("GameCompleted");
             };
             _this._gameOver = function () {
                 _this.game.state.start("GameOver");
@@ -753,6 +819,7 @@ var Asteroids;
                 _this._increaseScore(Asteroids.Global.POINTS_ASTEROID_PER_HIT);
                 // create explosion
                 _this._createExplosionAt(bullet.x, bullet.y);
+                _this._explosionSound1.play();
             };
             _this._bulletHitEnemy = function (bullet, enemy) {
                 bullet.kill();
@@ -760,6 +827,7 @@ var Asteroids;
                 _this._increaseScore(Asteroids.Global.POINTS_PER_ENEMY_HIT);
                 // create explosion
                 _this._createExplosionAt(enemy.x, enemy.y);
+                _this._explosionSound2.play();
             };
             _this._bulletHitBullet = function (playerBullet, enemyBullet) {
                 playerBullet.kill();
@@ -767,11 +835,13 @@ var Asteroids;
                 // create explosion
                 _this._createExplosionAt(playerBullet.x, playerBullet.y);
                 _this._createExplosionAt(enemyBullet.x, enemyBullet.y);
+                _this._explosionSound2.play();
             };
             _this._bulletHitSpaceship = function (spaceship, enemyBullet) {
                 enemyBullet.kill();
                 // create explosion
                 _this._createExplosionAt(enemyBullet.x, enemyBullet.y);
+                _this._explosionSound2.play();
                 _this._spaceship.health -= Asteroids.Global.ENEMY_BULLET_DAMAGE;
                 // change colour briefly
                 if (_this._spaceship.health > 0) {
@@ -798,10 +868,10 @@ var Asteroids;
                 explosion.animations.add("boom");
                 explosion.animations.play("boom", 10, false, true);
                 _this._explosions.add(explosion);
-                _this._explosionSound.play();
             };
             _this._spaceshipHitAsteroid = function (spaceship, asteroid) {
                 spaceship.health -= (Asteroids.Global.ASTEROID_DAMAGE * asteroid.getSize());
+                _this._explosionSound3.play();
                 // change colour briefly
                 if (spaceship.health > 0) {
                     spaceship.loadTexture("spaceship-hit");
@@ -810,6 +880,7 @@ var Asteroids;
             };
             _this._spaceshipHitEnemy = function (spaceship, enemy) {
                 spaceship.health -= Asteroids.Global.ENEMY_DAMAGE;
+                _this._explosionSound3.play();
                 // change colour briefly
                 if (spaceship.health > 0) {
                     spaceship.loadTexture("spaceship-hit");
@@ -873,10 +944,16 @@ var Asteroids;
             // audio
             this._music = this.game.add.audio('music');
             this._playerLaserSound = this.game.add.audio('laser-1');
-            this._explosionSound = this.game.add.audio('explosion-1');
+            this._playerLaserSound.volume = 2;
+            this._explosionSound1 = this.game.add.audio('explosion-1');
+            this._explosionSound1.volume = 10;
+            this._explosionSound2 = this.game.add.audio('explosion-2');
+            this._explosionSound2.volume = 10;
+            this._explosionSound3 = this.game.add.audio('explosion-3');
+            this._explosionSound3.volume = 5;
             this._hyperspaceSound = this.game.add.audio('hyperspace');
             this._music.play();
-            this._music.volume = 10;
+            this._music.volume = 6;
             // setup input
             this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
             this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
@@ -932,13 +1009,6 @@ var Asteroids;
         };
         Play.prototype.render = function () {
             this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, 80, "#ffffff");
-            // this.game.debug.text("Score:" + Global._score, 100, 80, "#ffffff");
-            // this.game.debug.text("Health:" + this._spaceship.health, 200, 80, "#ffffff");
-            // this.game.debug.text("Lives:" + Global._lives, 300, 80, "#ffffff");
-            // this.game.debug.text("Level:" + Global._level, 400, 80, "#ffffff");
-            // this.game.debug.text("Left:" + this._asteroidCount, 500, 80, "#ffffff");
-            // this._weapon.debug();
-            this.game.debug.soundInfo(this._music, 2, 160);
         };
         Play.prototype._resetShipTexture = function () {
             this._spaceship.loadTexture("spaceship");
@@ -1026,9 +1096,9 @@ var Asteroids;
             this.game.load.image('260-font', 'assets/fonts/260.png');
             // audio
             this.game.load.audio('music', 'assets/audio/TheLoomingBattle.ogg');
-            this.game.load.audio('explosion-1', 'assets/audio/Explosion10.ogg');
-            this.game.load.audio('explosion-2', 'assets/audio/Explosion18.ogg');
-            this.game.load.audio('explosion-3', 'assets/audio/Explosion20.ogg');
+            this.game.load.audio('explosion-1', 'assets/audio/explosion06.ogg');
+            this.game.load.audio('explosion-2', 'assets/audio/explosion07.ogg');
+            this.game.load.audio('explosion-3', 'assets/audio/Explosion4.ogg');
             this.game.load.audio('hyperspace', 'assets/audio/Jump3.ogg');
             this.game.load.audio('laser-1', 'assets/audio/Laser_Shoot.ogg');
             this.game.load.audio('laser-2', 'assets/audio/Laser_Shoot5.ogg');

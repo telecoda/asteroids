@@ -37,7 +37,9 @@ namespace Asteroids {
         // audio
         private _music: Phaser.Sound;
         private _playerLaserSound: Phaser.Sound;
-        private _explosionSound: Phaser.Sound;
+        private _explosionSound1: Phaser.Sound;
+        private _explosionSound2: Phaser.Sound;
+        private _explosionSound3: Phaser.Sound;
         private _hyperspaceSound: Phaser.Sound;
 
         // state
@@ -116,10 +118,16 @@ namespace Asteroids {
             // audio
             this._music = this.game.add.audio('music');
             this._playerLaserSound = this.game.add.audio('laser-1');
-            this._explosionSound = this.game.add.audio('explosion-1');
+            this._playerLaserSound.volume = 2;
+            this._explosionSound1 = this.game.add.audio('explosion-1');
+            this._explosionSound1.volume = 10;
+            this._explosionSound2 = this.game.add.audio('explosion-2');
+            this._explosionSound2.volume = 10;
+            this._explosionSound3 = this.game.add.audio('explosion-3');
+            this._explosionSound3.volume = 5;
             this._hyperspaceSound = this.game.add.audio('hyperspace');
             this._music.play();
-            this._music.volume = 10;
+            this._music.volume = 6;
           
 			// setup input
 			this._leftKey = this.game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
@@ -186,9 +194,6 @@ namespace Asteroids {
 
         private _startThruster = () => {
             this._thruster.start(true,500,null,1);
-            
-            //this.game.add.tween(this._thruster).to( { emitX: 800-64 }, 1000, Phaser.Easing.Sinusoidal.InOut, true, 0, Number.MAX_VALUE, true);
-            //this.game.add.tween(this._thruster).to( { emitY: 200 }, 4000, Phaser.Easing.Sinusoidal.InOut, true, 0, Number.MAX_VALUE, true);
         }
 
 
@@ -215,13 +220,6 @@ namespace Asteroids {
 
 		public render() {
 			this.game.debug.text("fps:" + this.game.time.fps.toString(), 2, 80, "#ffffff");
-			// this.game.debug.text("Score:" + Global._score, 100, 80, "#ffffff");
-			// this.game.debug.text("Health:" + this._spaceship.health, 200, 80, "#ffffff");
-			// this.game.debug.text("Lives:" + Global._lives, 300, 80, "#ffffff");
-			// this.game.debug.text("Level:" + Global._level, 400, 80, "#ffffff");
-			// this.game.debug.text("Left:" + this._asteroidCount, 500, 80, "#ffffff");
-            // this._weapon.debug();
-            this.game.debug.soundInfo(this._music, 2, 160);
   		}
 
         private _startNewGame = () => {
@@ -270,8 +268,8 @@ namespace Asteroids {
         }
 
         private _gameCompleted = () => {
-            this._setStatus("Congratulations - Game Complete!");
             this._state = Play.GAME_COMPLETED;
+            this.game.state.start("GameCompleted");        
         }
 
         private _gameOver = () => {
@@ -378,6 +376,7 @@ namespace Asteroids {
             this._increaseScore(Global.POINTS_ASTEROID_PER_HIT);
             // create explosion
             this._createExplosionAt(bullet.x,bullet.y);
+            this._explosionSound1.play();
         }
 
         private _bulletHitEnemy = (bullet: Phaser.Bullet,enemy: Asteroids.Enemy ) => {
@@ -386,6 +385,7 @@ namespace Asteroids {
             this._increaseScore(Global.POINTS_PER_ENEMY_HIT);
             // create explosion
             this._createExplosionAt(enemy.x,enemy.y);
+            this._explosionSound2.play();
         }
 
         private _bulletHitBullet = (playerBullet: Phaser.Bullet,enemyBullet: Phaser.Bullet ) => {
@@ -394,12 +394,14 @@ namespace Asteroids {
             // create explosion
             this._createExplosionAt(playerBullet.x,playerBullet.y);
             this._createExplosionAt(enemyBullet.x,enemyBullet.y);
+            this._explosionSound2.play();
         }
 
        private _bulletHitSpaceship = (spaceship: Phaser.Sprite,enemyBullet: Phaser.Bullet) => {
             enemyBullet.kill();
             // create explosion
             this._createExplosionAt(enemyBullet.x,enemyBullet.y);
+            this._explosionSound2.play();
 
             this._spaceship.health -= Global.ENEMY_BULLET_DAMAGE;
             // change colour briefly
@@ -431,12 +433,12 @@ namespace Asteroids {
             explosion.animations.add("boom");
             explosion.animations.play("boom",10,false,true);
             this._explosions.add(explosion);
-            this._explosionSound.play();
-
         }
 
         private _spaceshipHitAsteroid = (spaceship: Phaser.Sprite,asteroid: Asteroids.Asteroid ) => {
             spaceship.health -= (Global.ASTEROID_DAMAGE * asteroid.getSize());
+            this._explosionSound3.play();
+ 
             // change colour briefly
             if (spaceship.health > 0) {
                 spaceship.loadTexture("spaceship-hit");
@@ -447,6 +449,7 @@ namespace Asteroids {
 
         private _spaceshipHitEnemy = (spaceship: Phaser.Sprite,enemy: Asteroids.Enemy ) => {
             spaceship.health -= Global.ENEMY_DAMAGE;
+            this._explosionSound3.play();
             // change colour briefly
             if (spaceship.health > 0) {
                 spaceship.loadTexture("spaceship-hit");
