@@ -10,9 +10,10 @@ namespace Asteroids {
 
         // constants
         static TOTAL_LIVES: number = 3;
-        static TOTAL_LEVELS: number = 3;
+        static TOTAL_LEVELS: number = 10;
         static POINTS_ASTEROID_PER_HIT: number = 50;
         static POINTS_PER_ENEMY_HIT: number = 500;
+        static EXTRA_LIFE_EVERY: number = 10000;
         static HUD_Y: number = 20;
         static HUD_BORDER: number = 20;
         static HEALTHBAR_HEIGHT: number = 10;

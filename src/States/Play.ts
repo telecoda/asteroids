@@ -50,6 +50,7 @@ namespace Asteroids {
         private _rightKey: Phaser.Key;
         private _thrustKey: Phaser.Key;
         private _fireKey: Phaser.Key;
+        private _hyperspaceKey: Phaser.Key;
         private _pauseKey: Phaser.Key;
 
         // -------------------------------------------------------------------------
@@ -134,9 +135,11 @@ namespace Asteroids {
 			this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
 			this._thrustKey = this.game.input.keyboard.addKey(Phaser.Keyboard.UP);
             this._fireKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+            this._hyperspaceKey = this.game.input.keyboard.addKey(Phaser.Keyboard.H);
             this._pauseKey = this.game.input.keyboard.addKey(Phaser.Keyboard.P);
 
             this._pauseKey.onDown.add(this._pauseToggle, this);
+            this._hyperspaceKey.onDown.add(this._startHyperspace, this);
 
             
             this._startNewGame();
@@ -315,6 +318,25 @@ namespace Asteroids {
             this.game.paused = !this.game.paused;
         }
 
+        private _startHyperspace = () => {
+            if(this._state == Play.PLAYING) {
+                this._hyperspaceSound.play();
+                this._spaceship.visible = false;
+                this.game.time.events.add(Phaser.Timer.SECOND * 2 ,this._endHyperspace, this);
+            }
+        }
+
+        private _endHyperspace = () => {
+            // pick a random location
+            if (this.game && this._spaceship) {
+                let randX = this.game.width * Math.random();
+                let randY = this.game.height * Math.random();
+                this._spaceship.x = randX;
+                this._spaceship.y = randY;
+                this._spaceship.visible = true;
+            }
+        }
+
         private _setStatus = (text: string) => {
             this._statusFont.setText(text);
             this._statusLabel.x = this.game.width/2 - this._statusLabel.width/2;
@@ -419,10 +441,26 @@ namespace Asteroids {
         }
 
         private _increaseScore = (inc: number) => {
+            let beforeScore = Global._score;
             Global._score += inc;
+            let afterScore = Global._score;
+            if (Math.floor(afterScore / Global.EXTRA_LIFE_EVERY) > Math.floor(beforeScore / Global.EXTRA_LIFE_EVERY)) {
+                this._extraLife();
+            } 
             this._scoreFont.setText("Score:"+ Global._score);
             this._scoreLabel.y = Global.HUD_Y;
             this._scoreLabel.x = this.game.width/2 - this._scoreLabel.width/2;
+        }
+
+        private _extraLife = () => {
+            Global._lives++;
+            this._updateLivesText();
+            
+            this._livesLabel.tint = 0xff0000;
+            var livesScale=this.game.add.tween(this._livesLabel);
+            livesScale.to({ tint: 0xffffff }, 1000 + Math.random() * 3000, Phaser.Easing.Bounce.In);
+            livesScale.start();
+            // TODO play extra life sound
         }
 
         private _createExplosionAt = (x: number, y:number) => {

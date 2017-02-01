@@ -15,9 +15,10 @@ var Asteroids;
     Global.GAME_HEIGHT = 800;
     // constants
     Global.TOTAL_LIVES = 3;
-    Global.TOTAL_LEVELS = 3;
+    Global.TOTAL_LEVELS = 10;
     Global.POINTS_ASTEROID_PER_HIT = 50;
     Global.POINTS_PER_ENEMY_HIT = 500;
+    Global.EXTRA_LIFE_EVERY = 1000;
     Global.HUD_Y = 20;
     Global.HUD_BORDER = 20;
     Global.HEALTHBAR_HEIGHT = 10;
@@ -618,7 +619,8 @@ var Asteroids;
             instructions += "<LEFT> - Rotate ship left\n\n";
             instructions += "<RIGHT> - Rotate ship right\n\n";
             instructions += "<UP> - Thruster\n\n";
-            instructions += "<SPACE> - Fire\n";
+            instructions += "<SPACE> - Fire\n\n";
+            instructions += "<H> - Hyperspace\n\n";
             this._instFont.setText(instructions, true, 0, 0, Phaser.RetroFont.ALIGN_CENTER);
             this._instLabel.x = this.game.width / 2 - this._instLabel.width / 2;
             this._instLabel.y = 200;
@@ -764,6 +766,23 @@ var Asteroids;
             _this._pauseToggle = function () {
                 _this.game.paused = !_this.game.paused;
             };
+            _this._startHyperspace = function () {
+                if (_this._state == Play.PLAYING) {
+                    _this._hyperspaceSound.play();
+                    _this._spaceship.visible = false;
+                    _this.game.time.events.add(Phaser.Timer.SECOND * 2, _this._endHyperspace, _this);
+                }
+            };
+            _this._endHyperspace = function () {
+                // pick a random location
+                if (_this.game && _this._spaceship) {
+                    var randX = _this.game.width * Math.random();
+                    var randY = _this.game.height * Math.random();
+                    _this._spaceship.x = randX;
+                    _this._spaceship.y = randY;
+                    _this._spaceship.visible = true;
+                }
+            };
             _this._setStatus = function (text) {
                 _this._statusFont.setText(text);
                 _this._statusLabel.x = _this.game.width / 2 - _this._statusLabel.width / 2;
@@ -855,10 +874,24 @@ var Asteroids;
                 _this._livesLabel.x = _this.game.width - _this._livesLabel.width - Asteroids.Global.HUD_BORDER;
             };
             _this._increaseScore = function (inc) {
+                var beforeScore = Asteroids.Global._score;
                 Asteroids.Global._score += inc;
+                var afterScore = Asteroids.Global._score;
+                if (Math.floor(afterScore / Asteroids.Global.EXTRA_LIFE_EVERY) > Math.floor(beforeScore / Asteroids.Global.EXTRA_LIFE_EVERY)) {
+                    _this._extraLife();
+                }
                 _this._scoreFont.setText("Score:" + Asteroids.Global._score);
                 _this._scoreLabel.y = Asteroids.Global.HUD_Y;
                 _this._scoreLabel.x = _this.game.width / 2 - _this._scoreLabel.width / 2;
+            };
+            _this._extraLife = function () {
+                Asteroids.Global._lives++;
+                _this._updateLivesText();
+                _this._livesLabel.tint = 0xff0000;
+                var livesScale = _this.game.add.tween(_this._livesLabel);
+                livesScale.to({ tint: 0xffffff }, 1000 + Math.random() * 3000, Phaser.Easing.Bounce.In);
+                livesScale.start();
+                // TODO play extra life sound
             };
             _this._createExplosionAt = function (x, y) {
                 var explosion = new Phaser.Sprite(_this.game, x, y);
@@ -959,8 +992,10 @@ var Asteroids;
             this._rightKey = this.game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
             this._thrustKey = this.game.input.keyboard.addKey(Phaser.Keyboard.UP);
             this._fireKey = this.game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+            this._hyperspaceKey = this.game.input.keyboard.addKey(Phaser.Keyboard.H);
             this._pauseKey = this.game.input.keyboard.addKey(Phaser.Keyboard.P);
             this._pauseKey.onDown.add(this._pauseToggle, this);
+            this._hyperspaceKey.onDown.add(this._startHyperspace, this);
             this._startNewGame();
         };
         // -------------------------------------------------------------------------

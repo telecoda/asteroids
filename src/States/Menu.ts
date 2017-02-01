@@ -41,7 +41,8 @@ namespace Asteroids {
             instructions += "<LEFT> - Rotate ship left\n\n"
             instructions += "<RIGHT> - Rotate ship right\n\n"
             instructions += "<UP> - Thruster\n\n"
-            instructions += "<SPACE> - Fire\n"
+            instructions += "<SPACE> - Fire\n\n"
+            instructions += "<H> - Hyperspace\n\n"
             this._instFont.setText(instructions,true,0,0,Phaser.RetroFont.ALIGN_CENTER);
             this._instLabel.x = this.game.width/2 - this._instLabel.width/2;
             this._instLabel.y = 200; 
