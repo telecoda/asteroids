@@ -2,6 +2,8 @@
 
 This is a simple asteroids game written with [phaser.io](https://phaser.io) in [typescript](http://www.typescriptlang.org/index.html)
 
+![image](http://i.imgur.com/lTBjwj7.png)
+
 Nothing special, just to learn how phaser.io works.
 
 ## Play
